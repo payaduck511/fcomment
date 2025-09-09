@@ -1,0 +1,247 @@
+/* src/app/chat/page.module.css */
+
+.page {
+  position: relative;
+  min-height: 100vh;
+  margin: 0;
+  padding: 60px 0 0;
+  display: flex;
+  gap: 20px;
+  background-image: url('/assets/images/chatback.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  font-family: Arial, sans-serif;
+}
+
+/* 사용자 정보(우상단) */
+.userInfo {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  text-align: right;
+  color: #fff;
+}
+
+.userInfo p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.loginBtn,
+.logoutBtn {
+  background-color: #007bff;
+  color: #fff;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.logoutBtn {
+  background-color: #dc3545;
+}
+
+.loginBtn:hover {
+  background-color: #0056b3;
+}
+
+.logoutBtn:hover {
+  background-color: #c82333;
+}
+
+/* 좌측 캐릭터 패널 */
+.characterInfo {
+  flex: 0 0 300px;
+  max-width: 300px;
+  background-color: rgba(219, 233, 250, 0);
+  padding: 20px;
+  box-sizing: border-box;
+  border-right: 1px solid #ddd;
+  position: relative;
+  margin-left: 1cm;
+  color: #fff;
+}
+
+/* 캐릭터 이미지 배경 */
+.characterImageContainer {
+  position: relative;
+  width: 100%;
+  background-image: url('/assets/images/charback.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.characterInfo img:not(.characterLogo) {
+  position: relative;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* 캐릭터 로고 */
+.characterLogo {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 10vw;
+  min-width: 30px;
+  height: auto;
+}
+
+/* 배경 장식 이미지 */
+.leftImage,
+.rightImage {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: -1; /* 채팅박스 뒤 */
+}
+
+.leftImage {
+  left: calc(10% + 4cm);
+  width: 400px;
+  height: 400px;
+  background-image: url('/assets/images/pic1.png');
+}
+
+.rightImage {
+  right: 10%;
+  width: 150px;
+  height: 150px;
+  background-image: url('/assets/images/eyti.gif');
+}
+
+/* 메인 채팅 영역 */
+.chatContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 20px;
+  box-sizing: border-box;
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 채팅박스 */
+.chatBox {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: #fff;
+  margin-bottom: 20px;
+}
+
+/* 메시지 */
+.message {
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #f1f1f1;
+  border-radius: 10px;
+}
+
+/* 추천/신고 */
+.likeSection {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.likeButton {
+  font-size: 14px;
+  color: #555;
+}
+
+.likeCount {
+  font-size: 14px;
+  color: #555;
+}
+
+.reportButton {
+  margin-left: auto;
+  background-color: red;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.reportButton:hover {
+  opacity: 0.8;
+}
+
+/* 입력 박스 */
+.inputBox {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.inputBox input {
+  flex: 1 1 auto;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.inputBox button {
+  flex: 0 0 120px;
+  padding: 10px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.inputBox button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 타임스탬프 */
+.timestamp {
+  font-size: 12px;
+  color: gray;
+  margin-left: 10px;
+}
+
+/* 반응형 (선택) */
+@media (max-width: 1024px) {
+  .leftImage {
+    display: none;
+  }
+  .rightImage {
+    right: 5%;
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    flex-direction: column;
+    padding-top: 60px;
+  }
+  .characterInfo {
+    margin-left: 0;
+    border-right: 0;
+    border-bottom: 1px solid #ddd;
+    max-width: 100%;
+  }
+  .chatContainer {
+    max-width: 95%;
+  }
+}

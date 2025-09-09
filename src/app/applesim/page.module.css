@@ -1,0 +1,160 @@
+/* ===== 페이지 전용 (배경/로고) ===== */
+.page {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+
+  /* public 기준 절대 경로 */
+  background-image: url('/assets/images/applebackground.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative; /* 로고 absolute 기준 */
+}
+
+/* 오른쪽 상단 로고 */
+.logoRight {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 200px;
+  height: auto;
+}
+
+/* 왼쪽 상단 로고 */
+.logoLeft {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 200px;
+  height: auto;
+}
+
+/* ===== 시뮬레이터 UI (컴포넌트 스타일 흡수) ===== */
+.mainContainer {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.container {
+  width: 600px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  margin: 0 auto;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.fixedButtonContainer {
+  position: sticky;
+  top: 0;
+  padding: 10px;
+  background-color: #f8f9fa;
+  z-index: 1;
+}
+
+.spinButton {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.spinButton:hover { background-color: #0056b3; }
+.spinButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.resultHistoryContainer {
+  margin-top: 20px;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 20px;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.resultContainer { margin-bottom: 20px; }
+
+.resultText {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+}
+
+.spentContainer { margin-top: 10px; }
+
+.historyContainer {
+  margin-top: 10px;
+  height: 7.2cm;
+  overflow-y: auto;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.historyList {
+  list-style-type: none;
+  padding: 0;
+}
+
+.historyItem {
+  background-color: #f8f9fa;
+  padding: 10px;
+  margin-bottom: 5px;
+  border-radius: 5px;
+}
+
+/* 우측 사이드바 */
+.sidebarContainer {
+  width: 300px;
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.itemCountContainer {
+  height: 16cm;
+  overflow-y: auto;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.itemCountList {
+  list-style-type: none;
+  padding: 0;
+}
+
+.itemCountItem {
+  background-color: #f8f9fa;
+  padding: 10px;
+  margin-bottom: 5px;
+  border-radius: 5px;
+}
+
+/* 반짝이 효과 */
+@keyframes sparkle {
+  0%   { opacity: 0.5; transform: scale(1); }
+  50%  { opacity: 1;   transform: scale(1.2); }
+  100% { opacity: 0.5; transform: scale(1); }
+}
+
+.sparkleEffect {
+  animation: sparkle 1.5s infinite;
+  color: gold;
+  font-weight: bold;
+}

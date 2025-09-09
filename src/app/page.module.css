@@ -1,0 +1,233 @@
+/* ===================================
+  페이지 전역 스타일 및 다크 테마 변수
+  =================================== */
+.page {
+  --max: 1200px;
+  --pad: clamp(16px, 3vw, 24px);
+  --radius: 16px;
+  --bg: #1e2025;
+  --surface: #242830;
+  --border: #353941;
+  --text: #e2e4e8;
+  --muted: #8a929e;
+  --hover: #2d313a;
+  --accent-blue: #316fea;
+  --accent-yellow: #f5c538;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+
+  /* 푸터 고정을 위한 스타일 */
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* main 태그에 flex-grow를 적용하여 남은 공간을 채우게 합니다. */
+.page > main {
+  flex: 1;
+}
+
+/* ===================================
+  Hero 섹션
+  =================================== */
+.hero {
+  position: relative;
+  isolation: isolate;
+  min-height: 340px;
+  display: grid;
+  place-items: center;
+  padding: 64px var(--pad) 48px;
+  margin-bottom: 32px;
+  overflow: hidden;
+}
+
+/* 배경 이미지 */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url('/assets/images/background.png') center/cover no-repeat;
+  filter: saturate(0.9) brightness(0.65);
+  transform: scale(1.05);
+  z-index: -2;
+}
+
+/* 배경 이미지 위 어두운 그라데이션 오버레이 */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(30, 32, 37, 0.5) 0%, rgba(30, 32, 37, 0.85) 100%);
+  z-index: -1;
+}
+
+.heroInner {
+  width: 100%;
+  max-width: var(--max);
+  text-align: center;
+  color: #fff;
+}
+
+.title {
+  font-size: clamp(32px, 4.5vw, 48px);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
+  margin: 0;
+}
+
+.subtitle {
+  margin-top: 12px;
+  font-size: 1.1rem;
+  color: #e5e7eb;
+  opacity: 0.9;
+}
+
+/* 검색/로그인 컨트롤 영역 */
+.heroControls {
+  margin: 32px auto 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  max-width: 900px;
+}
+
+/* 검색창 스타일 */
+.searchWrap {
+  padding: 10px;
+  background: rgba(18, 20, 25, 0.7);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  width: 100%;
+  max-width: 600px;
+}
+
+/* CharacterSearch 컴포넌트 내부의 입력 필드에 대한 스타일입니다. */
+.searchWrap :where(input[type="text"], input, .input) {
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 16px;
+  color: var(--text);
+  width: 100%;
+}
+.searchWrap :where(input[type="text"], input, .input)::placeholder {
+  color: var(--muted);
+}
+/* 기존 .searchWrap 내 button 관련 CSS는 모두 삭제합니다. */
+
+/* ===================================
+  Grid & Cards
+  =================================== */
+.grid {
+  width: 100%;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--pad) 48px;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+  border: 1px solid var(--border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16px 20px 8px;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--accent-blue);
+}
+.cardHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
+  font-weight: 600;
+}
+.cardHint {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.cardBody {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+/* 댓글 아이템 스타일 */
+.cardBody :global(.comment-item) {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  line-height: 1.45;
+}
+.cardBody :global(.comment-item) p {
+  margin: 2px 0;
+}
+.cardBody :global(.comment-meta) {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ===================================
+  Footer
+  =================================== */
+.footer {
+  background-color: #111318;
+  color: var(--muted);
+  text-align: center;
+  padding: 24px 0;
+  font-size: 14px;
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.footer a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+.footer a:hover {
+  text-decoration: underline;
+}
+
+/* ===================================
+  Responsive
+  =================================== */
+@media (max-width: 720px) {
+  .heroControls {
+    flex-direction: column;
+    justify-content: stretch;
+  }
+  .searchWrap {
+    width: 100%;
+    max-width: none;
+  }
+}

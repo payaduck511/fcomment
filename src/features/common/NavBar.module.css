@@ -1,0 +1,230 @@
+/* ===================================
+  네비게이션 바 기본 스타일
+  =================================== */
+.navbar {
+  /* --- 테마 색상 변수 --- */
+  --pad: 16px;
+  --bg: #1e2025; /* 메인 배경 */
+  --bg-elev: #242830; /* 드롭다운 배경 */
+  --text: #e2e4e8; /* 기본 텍스트 */
+  --text-muted: #9aa0a6; /* 보조 텍스트 */
+  --border: #2c2e35; /* 구분선 */
+  --hover: #2a2c34; /* 호버 배경 */
+  --accent-yellow: #f5c538; /* 노란색 포인트 */
+  --accent-blue: #316fea; /* 파란색 포인트 */
+  --radius: 10px;
+
+  /* --- 레이아웃 --- */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 양쪽 끝 정렬 추가 */
+  padding: 0 var(--pad);
+
+  /* --- 디자인 --- */
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: saturate(160%) blur(6px); /* 유리 효과 */
+}
+
+/* ===================================
+  로고
+  =================================== */
+.navLogos .logo2 {
+  background-image: url('/assets/images/logo.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  height: 44px;
+  width: 112px;
+  display: inline-block;
+}
+
+/* ===================================
+  메뉴 아이템
+  =================================== */
+.menu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 2px;
+}
+
+.menuItem {
+  position: relative;
+}
+
+/* 메뉴 링크 공통 스타일 */
+.menuLink {
+  display: block;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  padding: 12px 14px;
+  line-height: 1;
+  border-radius: 8px;
+  position: relative;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+/* 마우스 호버 시 */
+.menuLink:hover,
+.menuLink:focus-visible {
+  background-color: var(--hover);
+  color: #fff;
+  outline: none;
+}
+
+/* 호버 시 노란색 언더라인 효과 */
+.menuLink::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 6px;
+  height: 2px;
+  background: var(--accent-yellow);
+  border-radius: 2px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  transform: scaleX(0); /* 기본 숨김 */
+  opacity: 0;
+}
+.menuLink:hover::after,
+.menuLink:focus-visible::after {
+  transform: scaleX(1);
+  opacity: 0.8;
+}
+
+/* 활성 탭 스타일 */
+.menuLink.isActive {
+  background-color: var(--accent-blue);
+  color: #ffffff;
+  font-weight: 600;
+}
+.menuLink.isActive::after {
+  display: none;
+}
+
+/* ===================================
+  드롭다운 메뉴
+  =================================== */
+.menuItemDropdown {
+  position: relative;
+}
+
+/* 드롭다운 패널 */
+.dropdownPanel {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  padding-top: 8px;
+  min-width: 200px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  z-index: 101;
+
+  /* 애니메이션 시작 상태 */
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: max-height 0.24s ease, opacity 0.18s ease, transform 0.22s ease;
+}
+
+/* 호버 시 드롭다운 펼침 */
+.menuItemDropdown:hover .dropdownPanel,
+.menuItemDropdown:focus-within .dropdownPanel {
+  max-height: 340px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 드롭다운 목록 아이템 */
+.dropdownLink {
+  display: block;
+  padding: 10px 16px;
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* 드롭다운 아이템 호버 시 */
+.dropdownLink:hover {
+  background-color: var(--hover);
+  color: #fff;
+  outline: none;
+}
+
+/* ===================================
+  우측 영역 (로그인/로그아웃 버튼)
+  =================================== */
+.navRight {
+  margin-left: auto; /* 메뉴바가 가운데에 위치하도록 함 */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.userName {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.authBtn {
+  background-color: var(--bg-elev);
+  color: var(--text);
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    color 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+}
+
+.authBtn:hover,
+.authBtn:focus-visible {
+  background-color: var(--hover);
+  border-color: #3f444c;
+  outline: none;
+}
+
+/* ===================================
+  모바일 반응형
+  =================================== */
+@media (max-width: 768px) {
+  .navbar {
+    --pad: 12px;
+  }
+  .menu {
+    gap: 0;
+    overflow-x: auto;
+  }
+  .menuLink {
+    padding: 12px 12px;
+  }
+  .menuItem {
+    flex: 0 0 auto;
+  }
+  .navRight {
+    gap: 8px;
+  }
+  .authBtn {
+    padding: 6px 12px;
+  }
+}
