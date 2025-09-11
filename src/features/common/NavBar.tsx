@@ -9,22 +9,17 @@ export default function NavBar() {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
-    // localStorage에서 'authToken' 키를 확인하여 로그인 상태를 판단합니다.
     const authToken = localStorage.getItem('authToken');
     if (authToken) {
-      // 실제로는 API를 통해 토큰의 유효성을 검증하고 사용자 이름을 가져오는 로직이 필요합니다.
-      // 예시를 위해 임시로 'Guest'라는 이름을 사용합니다.
       setIsLoggedIn(true);
-      setUserName('Guest'); 
+      setUserName('Guest');
     }
   }, []);
 
   const handleLogout = () => {
-    // 로그아웃 시 localStorage에서 'authToken' 키를 삭제합니다.
     localStorage.removeItem('authToken');
     setIsLoggedIn(false);
     setUserName('');
-    // 로그아웃 후 홈 페이지로 리다이렉트
     window.location.href = '/';
   };
 
@@ -60,6 +55,11 @@ export default function NavBar() {
               <li>
                 <Link className={styles.dropdownLink} href="/cubesim">
                   큐브
+                </Link>
+              </li>
+              <li>
+                <Link className={styles.dropdownLink} href="/bossringsim">
+                  보스 반지상자
                 </Link>
               </li>
             </ul>

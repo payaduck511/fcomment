@@ -1,160 +1,199 @@
-/* ===== 페이지 전용 (배경/로고) ===== */
+/* /src/app/applesim/page.module.css */
+.navBarWrapper {
+  position: relative;
+  z-index: 1000;
+}
+
 .page {
   min-height: 100vh;
   margin: 0;
-  padding: 0;
-
-  /* public 기준 절대 경로 */
-  background-image: url('/assets/images/applebackground.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative; /* 로고 absolute 기준 */
-}
-
-/* 오른쪽 상단 로고 */
-.logoRight {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 200px;
-  height: auto;
-}
-
-/* 왼쪽 상단 로고 */
-.logoLeft {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 200px;
-  height: auto;
-}
-
-/* ===== 시뮬레이터 UI (컴포넌트 스타일 흡수) ===== */
-.mainContainer {
+  padding: 80px 20px 20px;
+  background-color: #1a202c;
+  color: #e2e8f0;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: 20px;
+  box-sizing: border-box;
 }
 
-.container {
-  width: 600px;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 10px;
-  padding: 20px;
+.simContainer {
+  width: 100%;
+  max-width: 900px;
+  background-color: #2d3748;
+  border-radius: 12px;
+  padding: 30px;
   text-align: center;
-  margin: 0 auto;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-.fixedButtonContainer {
-  position: sticky;
-  top: 0;
-  padding: 10px;
-  background-color: #f8f9fa;
-  z-index: 1;
+.header {
+  margin-bottom: 25px;
+}
+.header h1 {
+  font-size: 2.2em;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+.header p {
+  font-size: 1.1em;
+  color: #a0aec0;
+}
+
+.resultContainer {
+  background-color: #1a202c;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 25px 0;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+
+/* --- 추가: 결과 이미지 스타일 --- */
+.resultImage {
+    max-width: 64px;
+    max-height: 64px;
+    height: auto;
+}
+
+.resultText {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #e2e8f0;
 }
 
 .spinButton {
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #007bff;
+  padding: 15px 30px;
+  font-size: 1.2em;
+  font-weight: bold;
+  background-color: #4299e1;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  margin-bottom: 25px;
 }
-.spinButton:hover { background-color: #0056b3; }
+.spinButton:hover {
+  background-color: #3182ce;
+  transform: translateY(-2px);
+}
 .spinButton:disabled {
-  background-color: #cccccc;
+  background-color: #718096;
   cursor: not-allowed;
+  transform: none;
 }
 
-.resultHistoryContainer {
-  margin-top: 20px;
-  background-color: rgba(255, 255, 255, 0.8);
-  padding: 20px;
-  border-radius: 10px;
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  border-top: 1px solid #4a5568;
+  border-bottom: 1px solid #4a5568;
+  padding: 20px 0;
+  margin-bottom: 25px;
+}
+
+.infoBox h3 {
+  color: #a0aec0;
+  font-size: 1em;
+  margin-bottom: 8px;
+}
+.infoBox p {
+  font-size: 1.5em;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.listsContainer {
+  display: flex;
+  gap: 20px;
   text-align: left;
 }
 
-.resultContainer { margin-bottom: 20px; }
-
-.resultText {
-  font-size: 20px;
-  font-weight: bold;
-  color: #333;
-}
-
-.spentContainer { margin-top: 10px; }
-
-.historyContainer {
-  margin-top: 10px;
-  height: 7.2cm;
-  overflow-y: auto;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 10px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.historyList {
-  list-style-type: none;
-  padding: 0;
-}
-
-.historyItem {
-  background-color: #f8f9fa;
-  padding: 10px;
-  margin-bottom: 5px;
-  border-radius: 5px;
-}
-
-/* 우측 사이드바 */
-.sidebarContainer {
-  width: 300px;
-  position: relative;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
+.historyContainer,
 .itemCountContainer {
-  height: 16cm;
-  overflow-y: auto;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 10px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  flex: 1;
+  background-color: #2a323f;
+  padding: 20px;
+  border-radius: 8px;
 }
 
-.itemCountList {
+.historyContainer h2,
+.itemCountContainer h2 {
+  color: #cbd5e0;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #4a5568;
+}
+
+.customList {
   list-style-type: none;
   padding: 0;
+  margin: 0;
+  height: 300px;
+  overflow-y: auto;
 }
 
-.itemCountItem {
-  background-color: #f8f9fa;
-  padding: 10px;
-  margin-bottom: 5px;
-  border-radius: 5px;
+.listItem {
+  padding: 10px 5px;
+  border-bottom: 1px solid #374151;
+  font-size: 0.95em;
+  color: #cbd5e0;
+  display: flex;
+  justify-content: space-between;
+}
+.listItem:last-child {
+  border-bottom: none;
+}
+.itemName {
+  flex-grow: 1;
+}
+.itemCount {
+  flex-shrink: 0;
+  font-weight: bold;
+  color: #ffffff;
+  margin-left: 10px;
 }
 
 /* 반짝이 효과 */
 @keyframes sparkle {
-  0%   { opacity: 0.5; transform: scale(1); }
-  50%  { opacity: 1;   transform: scale(1.2); }
-  100% { opacity: 0.5; transform: scale(1); }
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+    text-shadow: 0 0 10px #ffeea2, 0 0 20px #ffeea2;
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+    text-shadow: 0 0 20px #fff7d0, 0 0 40px #fff7d0;
+  }
 }
 
 .sparkleEffect {
-  animation: sparkle 1.5s infinite;
-  color: gold;
+  animation: sparkle 1.5s infinite ease-in-out;
+  color: #ffeea2;
   font-weight: bold;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .simContainer {
+    padding: 20px;
+  }
+  .header h1 {
+    font-size: 1.8em;
+  }
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+  .listsContainer {
+    flex-direction: column;
+  }
+  .customList {
+    height: 250px;
+  }
 }

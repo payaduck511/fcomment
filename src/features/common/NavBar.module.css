@@ -1,8 +1,4 @@
-/* ===================================
-  네비게이션 바 기본 스타일
-  =================================== */
 .navbar {
-  /* --- 테마 색상 변수 --- */
   --pad: 16px;
   --bg: #1e2025; /* 메인 배경 */
   --bg-elev: #242830; /* 드롭다운 배경 */
@@ -22,13 +18,13 @@
   z-index: 100;
   display: flex;
   align-items: center;
-  justify-content: space-between; /* 양쪽 끝 정렬 추가 */
+  justify-content: space-between;
   padding: 0 var(--pad);
 
   /* --- 디자인 --- */
   background: var(--bg);
   border-bottom: 1px solid var(--border);
-  backdrop-filter: saturate(160%) blur(6px); /* 유리 효과 */
+  backdrop-filter: saturate(160%) blur(6px);
 }
 
 /* ===================================

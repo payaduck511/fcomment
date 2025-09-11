@@ -1,13 +1,22 @@
-/* 전체 페이지 */
+/* /src/app/cubesim/page.module.css */
+
 .page {
   margin: 0;
   padding: 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   min-height: 100vh;
-  background-image: url('/assets/images/cubeback.png');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center center;
+  background-color: #1a202c;
+  color: #e2e8f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 100px;
+  box-sizing: border-box;
+}
+
+.navBarWrapper {
+  position: relative;
+  z-index: 1000;
 }
 
 /* 메인 컨테이너 */
@@ -15,30 +24,39 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: calc(100vh - 50px);
-  padding-top: 50px;
+  height: 100%;
   gap: 20px;
+  max-width: 1400px;
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 /* 큐브 시뮬레이터 카드 */
 .cubeSimulator {
-  width: 300px;
+  width: 380px;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  gap: 16px;
   text-align: center;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 10px;
-  padding: 20px;
+  background-color: #2d3748;
+  border-radius: 8px;
+  padding: 25px;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* 옵션 리스트 영역 */
 .cubeContent,
 .additionalCubeContent {
-  width: 400px;
-  height: 250px;
+  width: 100%;
+  max-height: 280px;
   overflow-y: auto;
+  background: #2a323f;
+  border-radius: 6px;
+  padding: 15px;
+  box-sizing: border-box;
+  color: #e2e8f0;
 }
 
 /* 제목(아이콘+텍스트) */
@@ -46,159 +64,438 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  font-size: 1.3em; /* 폰트 크기 증가 */
+  color: #cbd5e0; /* 제목 색상 */
+  margin-bottom: 15px;
 }
 
 .cubeIcon {
-  width: 30px;
-  height: 30px;
+  width: 32px; /* 아이콘 크기 증가 */
+  height: 32px;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
   display: inline-block;
-}
-
-.blackCube {
-  background-image: url('/assets/images/blackcube.png');
-}
-
-.additionalCube {
-  background-image: url('/assets/images/adcube.png');
+  filter: drop-shadow(0 0 3px rgba(0, 255, 255, 0.5));
 }
 
 /* 중앙 큰 이미지 영역 */
 .cubeImage {
-  background-image: url('/assets/images/cubeground.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  width: 700px;
-  height: 700px;
+  background-color: transparent;
+  width: 500px;
+  min-height: 300px;
+  padding: 20px;
+  box-sizing: border-box;
+  border-radius: 12px;
   position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: width 0.4s ease-in-out, min-height 0.4s ease-in-out, background-color 0.4s ease-in-out;
 }
 
-/* 결과 박스(중앙 오버레이) */
+.cubeImage.resultsVisible {
+  background-color: #2d3748;
+  width: 1000px;
+  min-height: 420px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* 평상시 결과 박스  */
 .resultBox {
-  position: absolute;
-  top: 70%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 350px;
-  height: 150px;
-  background-color: rgba(76, 76, 76, 0.7); /* ✅ 잘못된 색상 표기 수정 */
-  color: #fff;
-  padding: 15px;
+  position: static;
+  transform: none;
+  width: 400px;
+  min-height: 180px;
+  background-color: #2d3748;
+  color: #e2e8f0;
+  padding: 25px;
   text-align: center;
-  border-radius: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
-
-/* 등급/옵션 표시 */
 .gradeBox {
   width: 100%;
-  height: 30px;
-  background-color: lightblue;
+  height: 35px; /* 높이 증가 */
   color: #fff;
-  line-height: 30px;
+  line-height: 35px;
   text-align: center;
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   border-radius: 6px;
+  font-size: 1.1em; /* 폰트 크기 증가 */
 }
-
 .optionLine {
-  background-color: #4c4c4c;
-  color: #fff;
-  padding: 10px;
-  border-radius: 5px;
-  margin-top: 5px;
+  background-color: #4a5568; /* 옵션 라인 배경색 변경 */
+  color: #e2e8f0;
+  padding: 12px; /* 패딩 증가 */
+  border-radius: 6px;
+  margin-top: 8px;
   text-align: left;
-  font-size: 16px;
+  font-size: 1em;
 }
 
-/* 아이템 입력 폼 */
+/* 아이템 입력 폼(우측) */
 .itemInfo {
-  width: 300px;
-  background-color: rgba(255, 255, 255, 0.8);
-  padding: 20px;
-  border-radius: 10px;
+  width: 380px;
+  background-color: #2d3748;
+  padding: 25px;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  color: #e2e8f0;
 }
 
 .itemInfo h2 {
-  margin-bottom: 10px;
+  margin-bottom: 20px;
+  color: #cbd5e0;
+  font-size: 1.4em;
+  text-align: center;
 }
 
 .itemInfo label {
-  margin-top: 10px;
+  margin-top: 15px;
+  margin-bottom: 5px;
+  color: #a0aec0;
+  font-size: 0.95em;
 }
 
 .input,
 .select {
   width: 100%;
-  padding: 8px;
+  padding: 10px 12px;
   margin-top: 5px;
   margin-bottom: 15px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #fff;
+  border: 1px solid #4a5568;
+  border-radius: 5px;
+  background: #2a323f;
+  color: #e2e8f0;
+  font-size: 1em;
+}
+.input::placeholder {
+    color: #a0aec0;
 }
 
-/* 버튼 */
+/* 버튼 - 로그인 버튼과 유사하게 */
 .button {
-  background-color: #007bff;
+  background-color: #4299e1; /* 파란색 버튼 */
   color: #fff;
-  padding: 10px;
+  padding: 12px; /* 패딩 증가 */
   border: none;
-  border-radius: 4px;
+  border-radius: 5px;
   cursor: pointer;
+  font-size: 1.1em;
+  font-weight: bold;
+  transition: background-color 0.2s ease-in-out;
+  margin-top: 10px;
 }
 
 .button:hover {
-  background-color: #0056b3;
+  background-color: #3182ce; /* 호버 시 색상 어둡게 */
 }
 
-/* 풀스크린 안내 */
 .fullscreenWarning {
-  background-color: #ffcc00;
-  color: #333;
-  padding: 10px;
+  background-color: #ecc94b;
+  color: #2d3748;
+  padding: 12px;
   text-align: center;
   font-weight: bold;
   position: fixed;
   top: 50px;
   width: 100%;
   z-index: 101;
+  font-size: 0.95em;
 }
 
-/* 반응형 */
-@media (max-width: 1200px) {
-  .cubeImage {
-    width: 50%;
+/* --- 신규 스타일 추가 --- */
+.resultsContainer {
+  width: 100%;
+  background-color: transparent;
+  box-shadow: none;
+  border-radius: 8px;
+  padding: 10px;
+  max-width: 1000px;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Before, After 카드들을 감싸는 래퍼 */
+.resultCardsWrapper {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+.resultsTitle {
+  text-align: center;
+  font-size: 1.3em;
+  margin: 0 0 10px 0;
+  color: #cbd5e0;
+}
+
+/* 개별 결과 카드 */
+.resultCard {
+  background-color: #2a323f; /* 카드 배경색 */
+  border: 1px solid #4a5568; /* 테두리 색상 */
+  border-radius: 6px;
+  width: 220px; /* 카드 너비 조정 */
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, filter 0.3s;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0; /* 카드가 찌그러지지 않도록 설정 */
+}
+.resultCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 255, 255, 0.2), 0 0 0 2px #4299e1; /* 호버 시 파란색 테두리 */
+}
+
+/* --- 추가: 비활성화 카드 스타일 --- */
+.disabledCard {
+  filter: grayscale(80%) brightness(0.6); /* 어둡고 칙칙하게 */
+  cursor: not-allowed;
+}
+.disabledCard:hover {
+  transform: none; /* 호버 효과 제거 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* --- 추가: 등급업 애니메이션 --- */
+@keyframes gradeUpFloat {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+  100% { transform: translateY(0); }
+}
+
+/* 등급별 반짝임 효과 */
+@keyframes gradeUpGlowLegendary {
+  0%, 100% { box-shadow: 0 0 8px 2px #86E57F, inset 0 0 5px 1px #86E57F; }
+  50% { box-shadow: 0 0 24px 8px #86E57F, inset 0 0 10px 3px #86E57F; }
+}
+@keyframes gradeUpGlowUnique {
+  0%, 100% { box-shadow: 0 0 8px 2px #FFD232, inset 0 0 5px 1px #FFD232; }
+  50% { box-shadow: 0 0 24px 8px #FFD232, inset 0 0 10px 3px #FFD232; }
+}
+@keyframes gradeUpGlowEpic {
+  0%, 100% { box-shadow: 0 0 8px 2px #B184FF, inset 0 0 5px 1px #B184FF; }
+  50% { box-shadow: 0 0 24px 8px #B184FF, inset 0 0 10px 3px #B184FF; }
+}
+
+/* 등급업 카드 기본 스타일 */
+.upgradedCard {
+  animation-name: gradeUpFloat;
+  animation-duration: 0.8s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: 1;
+}
+/* 등급별로 다른 반짝임 애니메이션 적용 */
+.upgradedCard.gradeLegendary {
+  animation: gradeUpFloat 0.8s ease-in-out, gradeUpGlowLegendary 1.5s infinite;
+}
+.upgradedCard.gradeUnique {
+  animation: gradeUpFloat 0.8s ease-in-out, gradeUpGlowUnique 1.5s infinite;
+}
+.upgradedCard.gradeEpic {
+  animation: gradeUpFloat 0.8s ease-in-out, gradeUpGlowEpic 1.5s infinite;
+}
+
+
+.cardHeader {
+  background-color: #1a202c; /* 헤더 배경색 */
+  padding: 8px;
+  text-align: center;
+  font-weight: bold;
+  color: #a0aec0; /* 헤더 텍스트 색상 */
+  font-size: 0.9em;
+}
+.cardContent {
+  padding: 12px;
+}
+.cardGrade {
+  color: white;
+  font-weight: bold;
+  padding: 6px;
+  border-radius: 4px;
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 1em;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* 등급 글자에 그림자 */
+}
+.cardOptionLine {
+  background-color: #374151; /* 옵션 라인 배경색 */
+  color: #e2e8f0;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 6px;
+  font-size: 0.85em;
+  text-align: left;
+}
+.cardFooter {
+  background-color: #1a202c; /* 푸터 배경색 */
+  padding: 10px 12px;
+  font-size: 0.85em;
+  color: #a0aec0;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* 하단 재설정 버튼 영역 */
+.rerollButtonContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+}
+.rerollInfo {
+    font-size: 0.85em;
+    color: #999;
+}
+.rerollButton {
+    background-color: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 14px 28px;
+    font-size: 1.05em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.rerollButton:hover {
+    background-color: #3182ce;
+}
+
+
+/* 우측 패널 구분선 */
+.divider {
+  border: none;
+  border-top: 1px solid #4a5568; /* 구분선 색상 변경 */
+  margin: 25px 0;
+}
+
+/* 토글 스위치 */
+.toggleSwitchContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  color: #cbd5e0;
+  font-size: 1em;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px; /* 스위치 너비 조정 */
+  height: 28px; /* 스위치 높이 조정 */
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #718096; /* 비활성화 색상 */
+  transition: 0.4s;
+  border-radius: 28px; /* 높이에 맞게 조정 */
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px; /* 슬라이더 핸들 크기 조정 */
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: #4299e1; /* 활성화 색상 */
+}
+input:focus + .slider {
+  box-shadow: 0 0 1px #4299e1;
+}
+input:checked + .slider:before {
+  transform: translateX(22px); /* 너비에 맞게 조정 */
+}
+
+
+/* --- 반응형 (기존 스타일에서 일부 조정) --- */
+@media (max-width: 1300px) { /* 조금 더 일찍 반응형 적용 */
+  .mainContainer {
+    flex-direction: column; /* 세로 배열 */
     height: auto;
+    padding: 80px 20px 20px 20px; /* NavBar와 하단 여백 고려 */
   }
   .cubeSimulator,
-  .itemInfo {
-    width: 250px;
-  }
+  .itemInfo,
   .resultBox {
-    width: 80%;
-    top: 80%;
+    width: 90%; /* 너비 조정 */
+    max-width: 500px; /* 최대 너비 설정 */
+  }
+  .cubeImage {
+    width: 100%;
+    height: auto;
+    min-height: 400px; /* 최소 높이 설정 */
+    margin: 20px 0;
+  }
+  .resultsContainer {
+    width: 90%;
+    max-width: 600px;
+  }
+  .resultCardsWrapper {
+    flex-direction: row; /* 여전히 가로 배열 (3개일 경우) */
   }
 }
 
-@media (max-width: 800px) {
-  .cubeImage {
-    width: 40%;
-    height: auto;
+@media (max-width: 768px) {
+  .resultsContainer {
+    padding: 15px;
   }
-  .cubeSimulator,
-  .itemInfo {
-    width: 200px;
+  .resultsTitle {
+    font-size: 1.1em;
   }
-  .resultBox {
-    width: 70%;
-    top: 85%;
+  .resultCard {
+    width: 100%;
+    max-width: 300px;
+  }
+  .rerollButton {
+    padding: 10px 20px;
+    font-size: 0.95em;
+  }
+  .fullscreenWarning {
+    font-size: 0.85em;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cubeSimulator, .itemInfo {
+    padding: 15px;
+  }
+  .itemInfo h2 {
+    font-size: 1.2em;
+  }
+  .titleRow {
+    font-size: 1.1em;
+  }
+  .input, .select, .button {
+    font-size: 0.9em;
+    padding: 10px;
   }
 }

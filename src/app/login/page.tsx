@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import styles from './page.module.css';
 
 type LoginResponse =
@@ -12,24 +13,26 @@ const API_LOGIN = '/api/login';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
-  const rawRedirect = useMemo(() => searchParams.get('redirect') || '/', [searchParams]);
+const rawRedirect = useMemo(() => searchParams.get('redirect') || '/', [
+  searchParams,
+]);
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [pending, setPending]   = useState(false);
+  const [pending, setPending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  function getSafeRedirect(): string {
-    const to = (rawRedirect || '/').trim();
-    try {
-      const test = new URL(to, window.location.origin);
-      if (test.origin !== window.location.origin) return '/';
-      if (!test.pathname.startsWith('/')) return '/';
-      return test.pathname + test.search + test.hash;
-    } catch {
-      return '/';
-    }
+function getSafeRedirect(): string {
+  const to = (rawRedirect || '/').trim();
+  try {
+    const test = new URL(to, window.location.origin);
+    if (test.origin !== window.location.origin) return '/';
+    if (!to.startsWith('/')) return '/';
+    return test.pathname + test.search + test.hash;
+  } catch {
+    return '/';
   }
+}
 
   async function handleLogin() {
     if (!username.trim() || !password) {
@@ -72,62 +75,73 @@ export default function LoginPage() {
     if (e.key === 'Enter') handleLogin();
   }
 
-  function redirectToSignupPage() {
-    window.location.href = '/signup?redirect=' + encodeURIComponent(getSafeRedirect());
+function redirectToSignupPage() {
+    window.location.href = '/signup';
   }
 
   function redirectToFindPassword() {
-    window.location.href = '/find-password?redirect=' + encodeURIComponent(getSafeRedirect());
+    window.location.href = '/find-password';
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        <h2 className={styles.title}>로그인</h2>
-
-        <input
-          type="text"
-          id="loginUsername"
-          placeholder="아이디"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          onKeyDown={handleEnter}
-          className={styles.input}
-          autoFocus
-          autoComplete="username"
+    <main className={styles.page}>
+      <div className={styles.loginCard}>
+        <Image
+          src="/assets/images/logo.png"
+          alt="Paya Logo"
+          width={80}
+          height={80}
+          className={styles.logo}
         />
 
-        <input
-          type="password"
-          id="loginPassword"
-          placeholder="비밀번호"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={handleEnter}
-          className={styles.input}
-          autoComplete="current-password"
-        />
+        <h1 className={styles.title}>Paya 로그인</h1>
+
+        <div className={styles.inputGroup}>
+          {/* --- 아이디 입력창으로 수정 --- */}
+          <input
+            type="text"
+            id="loginUsername"
+            placeholder="ID"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            onKeyDown={handleEnter}
+            className={styles.input}
+            autoFocus
+            autoComplete="username"
+          />
+          <input
+            type="password"
+            id="loginPassword"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={handleEnter}
+            className={styles.input}
+            autoComplete="current-password"
+          />
+        </div>
 
         <button
           id="loginSubmit"
           onClick={handleLogin}
           disabled={pending}
-          className={styles.button}
+          className={styles.loginButton}
         >
           {pending ? '로그인 중...' : '로그인'}
         </button>
 
         {errorMsg && <p className={styles.error}>{errorMsg}</p>}
 
-        <div className={styles.buttonGroup}>
-          <div className={styles.sideButton} onClick={redirectToSignupPage}>
-            회원가입
-          </div>
-          <div className={styles.sideButton} onClick={redirectToFindPassword}>
+        <div className={styles.footerLinks}>
+          <button onClick={redirectToFindPassword} className={styles.linkButton}>
             비밀번호 찾기
-          </div>
+          </button>
+          <span className={styles.separator}>|</span>
+          <button onClick={redirectToSignupPage} className={styles.linkButton}>
+            회원가입
+          </button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

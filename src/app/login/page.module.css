@@ -1,65 +1,137 @@
-/* 로그인 페이지 전체 배경 */
+/* --- 1. 페이지 전체 배경 --- */
 .page {
-  font-family: Arial, sans-serif;
-  background-color: #f4f4f4;
-  padding: 20px;
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-/* 카드 컨테이너 */
-.container {
-  max-width: 400px;
-  width: 100%;
-  background-color: white;
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR',
+    'Malgun Gothic', sans-serif;
+
+  background-size: cover;
+  background-position: center;
+
+  /* 배경 이미지가 없을 때를 위한 fallback 그라데이션 */
+  background-color: #1a1a2e;
+  background-image: linear-gradient(135deg, #1a1a2e 0%, #16213e 74%);
 }
 
-/* 입력 필드와 버튼 공통 */
-.input, .button {
-  padding: 10px;
-  margin-bottom: 10px;
+.loginCard {
   width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  max-width: 420px;
+  padding: 40px 35px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px; 
+
+  /* 글래스모피즘 효과 */
+  background: rgba(23, 27, 41, 0.75);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.125);
+}
+
+/* --- 3. 카드 내부 요소 --- */
+.logo {
+  /* 로고와 제목 사이 간격을 위해 약간의 마진 추가 */
+  margin-bottom: -5px;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #f0f0f0;
+  margin: 0;
+}
+
+.inputGroup {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* 입력창 사이 간격 */
+}
+
+.input {
+  width: 100%;
+  padding: 12px 15px;
   font-size: 16px;
+  background-color: #ffffff;
+  border: 1px solid #4a4a6a;
+  border-radius: 8px;
+  color: #111;
+  outline: none; /* 포커스 시 기본 아웃라인 제거 */
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* 기본 버튼 */
-.button {
-  background-color: #007bff;
-  color: white;
+.input::placeholder {
+  color: #888;
+}
+
+.input:focus {
+  border-color: #4a69ff;
+  box-shadow: 0 0 0 3px rgba(74, 105, 255, 0.25);
+}
+
+.loginButton {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+  background-color: #3b5998; /* 이미지에서 추출한 파란색 계열 */
   border: none;
+  border-radius: 8px;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.button:hover {
-  background-color: #0056b3;
+.loginButton:hover {
+  background-color: #2f477a;
 }
 
-/* 사이드 버튼 */
-.sideButton {
-  display: inline-block;
-  width: 48%;
-  margin-right: 1%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  background-color: #6c757d;
-  color: white;
+.loginButton:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+/* --- 4. 하단 링크 및 메시지 --- */
+.error {
+  color: #ff7b7b;
+  font-size: 14px;
   text-align: center;
+  /* 에러 메시지가 나타날 때 레이아웃이 밀리는 것을 방지 */
+  min-height: 20px;
+  margin-top: -10px;
+  margin-bottom: -10px;
+}
+
+.footerLinks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  color: #a0a0b0;
   cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  transition: color 0.2s;
 }
 
-.sideButton:last-child {
-  margin-right: 0;
+.linkButton:hover {
+  color: #ffffff;
+  text-decoration: underline;
 }
 
-.sideButton:hover {
-  background-color: #5a6268;
+.separator {
+  color: #505060;
+  font-size: 14px;
 }

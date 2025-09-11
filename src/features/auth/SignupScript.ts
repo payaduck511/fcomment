@@ -47,6 +47,8 @@ export default function SignupScript() {
         const username = (($('registerUsername') as HTMLInputElement)?.value || '').trim();
         if (!validateUsername(username)) {
           alert('아이디는 최소 4자 이상 입력해주세요.');
+          // 실패 콜백
+          (window as any).onUsernameChecked?.(false);
           return;
         }
         const res = await fetch(API('/api/check-username'), {
@@ -57,12 +59,16 @@ export default function SignupScript() {
         const data = await res.json().catch(() => ({} as any));
         if (res.ok) {
           alert(data?.message || '사용 가능한 아이디입니다.');
+          // 성공 콜백
+          (window as any).onUsernameChecked?.(true);
         } else {
           alert(data?.message || '이미 사용 중인 아이디입니다.');
+          (window as any).onUsernameChecked?.(false);
         }
       } catch (err) {
         console.error('Error checking username:', err);
         alert('아이디 확인 중 오류가 발생했습니다.');
+        (window as any).onUsernameChecked?.(false);
       } finally {
         checkingUsername = false;
       }
@@ -77,6 +83,7 @@ export default function SignupScript() {
         const nickname = (($('registerNickname') as HTMLInputElement)?.value || '').trim();
         if (!validateNickname(nickname)) {
           alert('닉네임은 최소 2자 이상 입력해주세요.');
+          (window as any).onNicknameChecked?.(false);
           return;
         }
         const res = await fetch(API('/api/check-nickname'), {
@@ -87,12 +94,15 @@ export default function SignupScript() {
         const data = await res.json().catch(() => ({} as any));
         if (res.ok) {
           alert(data?.message || '사용 가능한 닉네임입니다.');
+          (window as any).onNicknameChecked?.(true);
         } else {
           alert(data?.message || '이미 사용 중인 닉네임입니다.');
+          (window as any).onNicknameChecked?.(false);
         }
       } catch (err) {
         console.error('Error checking nickname:', err);
         alert('닉네임 확인 중 오류가 발생했습니다.');
+        (window as any).onNicknameChecked?.(false);
       } finally {
         checkingNickname = false;
       }
@@ -130,6 +140,8 @@ export default function SignupScript() {
           const sec = $('emailVerificationSection');
           if (sec) (sec as HTMLDivElement).style.display = 'block';
           alert(data?.message || '이메일로 인증코드를 전송했습니다.');
+          // 전송 성공 알림 콜백 (UI에서 "코드 전송됨" 표시용)
+          (window as any).onEmailCodeSent?.();
         } else {
           alert(data?.error || data?.message || '인증 코드 전송에 실패했습니다.');
         }
@@ -170,10 +182,12 @@ export default function SignupScript() {
 
         if (!validateEmail(email)) {
           alert('올바른 이메일을 입력해주세요.');
+          (window as any).onEmailVerified?.(false);
           return;
         }
         if (!inputCode) {
           alert('인증코드를 입력해주세요.');
+          (window as any).onEmailVerified?.(false);
           return;
         }
 
@@ -193,6 +207,8 @@ export default function SignupScript() {
           }
           const registerBtn = $('registerButton') as HTMLButtonElement | null;
           if (registerBtn) registerBtn.disabled = false;
+          // 성공 콜백
+          (window as any).onEmailVerified?.(true);
         } else {
           emailVerified = false;
           if (resultEl) {
@@ -201,10 +217,12 @@ export default function SignupScript() {
           }
           const registerBtn = $('registerButton') as HTMLButtonElement | null;
           if (registerBtn) registerBtn.disabled = true;
+          (window as any).onEmailVerified?.(false);
         }
       } catch (err) {
         console.error('Error verifying code:', err);
         alert('인증 확인 중 오류가 발생했습니다.');
+        (window as any).onEmailVerified?.(false);
       } finally {
         verifyingCode = false;
       }

@@ -1,11 +1,20 @@
+// /src/features/cubesim/useCubeSim.ts
+
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
 
-/** 등급 타입 */
+// --- 타입 정의 ---
 export type GradeKo = '레어' | '에픽' | '유니크' | '레전드리';
 
-/** 내부 매핑 */
+// --- 추가: 등급 순서 정의 ---
+const gradeOrder: Record<GradeKo, number> = {
+  '레어': 0,
+  '에픽': 1,
+  '유니크': 2,
+  '레전드리': 3,
+};
+
 export const gradeMapping: Record<GradeKo, 'rare' | 'epic' | 'unique' | 'legendary'> = {
   레어: 'rare',
   에픽: 'epic',
@@ -13,21 +22,18 @@ export const gradeMapping: Record<GradeKo, 'rare' | 'epic' | 'unique' | 'legenda
   레전드리: 'legendary',
 };
 
-/** 기본 큐브 확률/보장 */
 export const cubeRates = {
   rareToEpic: { rate: 0.15, guarantee: 10 },
   epicToUnique: { rate: 0.035, guarantee: 42 },
   uniqueToLegendary: { rate: 0.014, guarantee: 107 },
 } as const;
 
-/** 에디셔널 큐브 확률/보장 */
 export const additionalCubeRates = {
   rareToEpic: { rate: 0.047619, guarantee: 62 },
   epicToUnique: { rate: 0.019608, guarantee: 152 },
   uniqueToLegendary: { rate: 0.007, guarantee: 214 },
 } as const;
 
-/** 장비 선택 정보 */
 export type SelectedItem = {
   equipmentType: string;
   level: number;
@@ -35,17 +41,14 @@ export type SelectedItem = {
   additionalPotential: GradeKo;
 };
 
-/** 옵션 가중치 타입 */
 export type OptionProb = { option: string; probability: number };
 
-/** 한 번 스핀 시 세 줄 세트 */
 export type OptionSet = {
   firstLine: OptionProb[];
   secondLine: OptionProb[];
   thirdLine: OptionProb[];
 };
 
-/** 옵션 제공자 인터페이스 (주입형) */
 export type OptionProvider = (args: {
   equipmentType: string;
   level: number;
@@ -53,10 +56,9 @@ export type OptionProvider = (args: {
   additional: boolean;
 }) => OptionSet | null | undefined;
 
-/** 등급 → 박스 색상 */
 const gradeColors: Record<GradeKo, string> = {
   레어: 'lightblue',
-  에픽: '#6E6EFF',
+  에픽: '#B184FF',
   유니크: '#FFD232',
   레전드리: '#86E57F',
 };
@@ -67,289 +69,243 @@ export type UseCubeSimOptions = {
   optionProvider?: OptionProvider;
 };
 
+// --- 신규 타입 추가 ---
+export type PotentialResult = {
+  grade: GradeKo;
+  lines: [string, string, string];
+};
+
+export type CubeResultState = {
+  before: PotentialResult | null;
+  after: PotentialResult[];
+  gradeUpOccurred: boolean;
+};
+
+// --- 메인 훅 ---
+
 export function useCubeSim(opts: UseCubeSimOptions = {}) {
   const { optionProvider } = opts;
 
-  // 선택된 아이템 & 모드
+  // 아이템, 모드, 옵션 상태
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [isAdditionalMode, setIsAdditionalMode] = useState(false);
+  const [isMvpBlackMode, setMvpBlackMode] = useState(false);
+  const [isMiracleTime, setMiracleTime] = useState(false);
 
-  // 현재 등급
+  // 현재 아이템에 적용된 등급 및 옵션 라인
   const [currentGrade, setCurrentGrade] = useState<GradeKo>('레어');
   const [additionalCurrentGrade, setAdditionalCurrentGrade] = useState<GradeKo>('레어');
+  const [currentLines, setCurrentLines] = useState<[string, string, string]>(['', '', '']);
+  const [additionalCurrentLines, setAdditionalCurrentLines] = useState<[string, string, string]>(['', '', '']);
 
   // 실패 카운터
   const [failCount, setFailCount] = useState<FailCounters>({ rare: 0, epic: 0, unique: 0 });
   const [additionalFailCount, setAdditionalFailCount] = useState<FailCounters>({ rare: 0, epic: 0, unique: 0 });
 
-  // 결과 옵션 라인
-  const [line1, setLine1] = useState<string>('');
-  const [line2, setLine2] = useState<string>('');
-  const [line3, setLine3] = useState<string>('');
+  // 큐브 결과물 (Before / After)
+  const [cubeResults, setCubeResults] = useState<CubeResultState>({ before: null, after: [], gradeUpOccurred: false });
 
-  /** 아이템 저장 */
-  const saveItem = useCallback(
-    (item: SelectedItem) => {
-      if (!Number.isFinite(item.level)) {
-        alert('장비 레벨을 올바르게 입력해주세요.');
-        return;
-      }
-      const level = Math.max(0, Math.floor(item.level));
-      if (!Number.isFinite(level)) {
-        alert('장비 레벨을 올바르게 입력해주세요.');
-        return;
-      }
-      const normalized: SelectedItem = { ...item, level };
-      setSelectedItem(normalized);
-      setCurrentGrade(normalized.potential);
-      setAdditionalCurrentGrade(normalized.additionalPotential);
-      // 카운터 초기화
-      setFailCount({ rare: 0, epic: 0, unique: 0 });
-      setAdditionalFailCount({ rare: 0, epic: 0, unique: 0 });
-      alert('아이템 정보가 저장되었습니다. 큐브를 돌려보세요.');
-    },
-    []
-  );
+  /** 아이템 정보 저장 콜백 */
+  const saveItem = useCallback((item: SelectedItem) => {
+    if (!Number.isFinite(item.level) || item.level <= 0) {
+      alert('장비 레벨을 올바르게 입력해주세요.');
+      return;
+    }
+    const normalized: SelectedItem = { ...item, level: Math.floor(item.level) };
+    setSelectedItem(normalized);
+    setCurrentGrade(normalized.potential);
+    setAdditionalCurrentGrade(normalized.additionalPotential);
+    
+    // 상태 초기화
+    setCurrentLines(['옵션 1', '옵션 2', '옵션 3']);
+    setAdditionalCurrentLines(['에디셔널 옵션 1', '에디셔널 옵션 2', '에디셔널 옵션 3']);
+    setFailCount({ rare: 0, epic: 0, unique: 0 });
+    setAdditionalFailCount({ rare: 0, epic: 0, unique: 0 });
+    setCubeResults({ before: null, after: [], gradeUpOccurred: false }); // 초기화 시 gradeUpOccurred 추가
+    alert('아이템 정보가 저장되었습니다. 큐브를 돌려보세요.');
+  }, []);
 
-  /** 가중치에서 옵션 하나 뽑기 */
+  /** 가중치 배열에서 옵션 1개 랜덤 선택 */
   const pickOption = useCallback((options: OptionProb[]): string => {
     if (!Array.isArray(options) || options.length === 0) return '';
     const total = options.reduce((s, o) => s + (o.probability || 0), 0);
     if (total <= 0) return options[0]?.option ?? '';
     let r = Math.random() * total;
-    let cum = 0;
     for (const o of options) {
       const p = o.probability || 0;
-      cum += p;
-      if (r < cum) return o.option;
+      r -= p;
+      if (r < 0) return o.option;
     }
-    // fallback
     return options[options.length - 1]?.option ?? '';
   }, []);
 
-  /** 옵션 생성 (기본/에디셔널 공용) */
-  const generate = useCallback(
-    (additional: boolean) => {
-      if (!selectedItem) {
-        alert('아이템 정보를 먼저 저장해주세요.');
-        return;
+  /** 새로운 옵션 3줄과 등급을 생성 (순수 함수) */
+  const _generateNewPotentialSet = useCallback((
+    baseGrade: GradeKo, 
+    failCounters: FailCounters, 
+    isAdditional: boolean
+  ): { result: PotentialResult; nextFailCounters: FailCounters } => {
+    if (!selectedItem) throw new Error("아이템 정보 없음");
+
+    const rates = isAdditional ? additionalCubeRates : cubeRates;
+    const miracleFactor = isMiracleTime ? 2 : 1;
+    let nextGrade = baseGrade;
+    const nextFailCounters = { ...failCounters };
+
+    // 1. 등급업 결정
+    if (baseGrade === '레어') {
+      const key = 'rare';
+      if (Math.random() < rates.rareToEpic.rate * miracleFactor || nextFailCounters[key] >= rates.rareToEpic.guarantee) {
+        nextGrade = '에픽';
+        nextFailCounters[key] = 0;
+      } else {
+        nextFailCounters[key]++;
       }
-      const equipmentType = selectedItem.equipmentType;
-      const level = selectedItem.level;
-      const gradeKo = additional ? additionalCurrentGrade : currentGrade;
-
-      // 옵션 제공자 호출 (없으면 스텁)
-      const provider: OptionProvider =
-        optionProvider ??
-        (() => ({
-          firstLine: [{ option: '옵션 데이터 없음(1줄)', probability: 1 }],
-          secondLine: [{ option: '옵션 데이터 없음(2줄)', probability: 1 }],
-          thirdLine: [{ option: '옵션 데이터 없음(3줄)', probability: 1 }],
-        }));
-
-      let set: OptionSet | null | undefined;
-      try {
-        set = provider({ equipmentType, level, grade: gradeKo, additional });
-      } catch (e) {
-        console.error('optionProvider 오류:', e);
-        set = {
-          firstLine: [{ option: '옵션 데이터 로드 실패(1줄)', probability: 1 }],
-          secondLine: [{ option: '옵션 데이터 로드 실패(2줄)', probability: 1 }],
-          thirdLine: [{ option: '옵션 데이터 로드 실패(3줄)', probability: 1 }],
-        };
+    } else if (baseGrade === '에픽') {
+      const key = 'epic';
+      if (Math.random() < rates.epicToUnique.rate * miracleFactor || nextFailCounters[key] >= rates.epicToUnique.guarantee) {
+        nextGrade = '유니크';
+        nextFailCounters[key] = 0;
+      } else {
+        nextFailCounters[key]++;
       }
-
-      if (!set) {
-        alert(additional ? '에디셔널 옵션을 가져오지 못했습니다.' : '옵션을 가져오지 못했습니다.');
-        return;
+    } else if (baseGrade === '유니크') {
+        const key = 'unique';
+      if (Math.random() < rates.uniqueToLegendary.rate * miracleFactor || nextFailCounters[key] >= rates.uniqueToLegendary.guarantee) {
+        nextGrade = '레전드리';
+        nextFailCounters[key] = 0;
+      } else {
+        nextFailCounters[key]++;
       }
+    }
 
-      const safeSet: OptionSet = {
-        firstLine: Array.isArray(set.firstLine) && set.firstLine.length ? set.firstLine : [{ option: '옵션 없음(1줄)', probability: 1 }],
-        secondLine: Array.isArray(set.secondLine) && set.secondLine.length ? set.secondLine : [{ option: '옵션 없음(2줄)', probability: 1 }],
-        thirdLine: Array.isArray(set.thirdLine) && set.thirdLine.length ? set.thirdLine : [{ option: '옵션 없음(3줄)', probability: 1 }],
-      };
+    // 2. 옵션 3줄 결정
+    const provider = optionProvider ?? (() => null);
+    const set = provider({ 
+        equipmentType: selectedItem.equipmentType, 
+        level: selectedItem.level, 
+        grade: nextGrade, 
+        additional: isAdditional 
+    });
 
-      setLine1(pickOption(safeSet.firstLine));
-      setLine2(pickOption(safeSet.secondLine));
-      setLine3(pickOption(safeSet.thirdLine));
-    },
-    [selectedItem, currentGrade, additionalCurrentGrade, optionProvider, pickOption]
-  );
+    const lines: [string, string, string] = [
+        pickOption(set?.firstLine ?? [{option: '옵션(1)', probability: 1}]),
+        pickOption(set?.secondLine ?? [{option: '옵션(2)', probability: 1}]),
+        pickOption(set?.thirdLine ?? [{option: '옵션(3)', probability: 1}])
+    ];
 
-  /** 등급 업그레이드 (기본) */
-  const upgradeGrade = useCallback(() => {
-    if (!selectedItem || isAdditionalMode) {
-      if (!selectedItem) alert('아이템 정보를 먼저 저장해주세요.');
+    return { result: { grade: nextGrade, lines }, nextFailCounters };
+  }, [selectedItem, isMiracleTime, optionProvider, pickOption]);
+
+  /** 큐브 돌리기 (재설정) 버튼 핸들러 */
+  const handleCubeReroll = useCallback(() => {
+    if (!selectedItem) {
+      alert('아이템 정보를 먼저 저장해주세요.');
       return;
     }
-    // 이미 최고 등급이면 종료
-    if (currentGrade === '레전드리') return;
 
-    setCurrentGrade((gradePrev) => {
-      let next = gradePrev;
-      setFailCount((prev) => {
-        const fc = { ...prev };
+    const currentItemGrade = isAdditionalMode ? additionalCurrentGrade : currentGrade;
+    const currentItemLines = isAdditionalMode ? additionalCurrentLines : currentLines;
+    const currentFailCount = isAdditionalMode ? additionalFailCount : failCount;
+    
+    const beforeResult: PotentialResult = {
+      grade: currentItemGrade,
+      lines: currentItemLines,
+    };
 
-        if (gradePrev === '레어') {
-          if (Math.random() < cubeRates.rareToEpic.rate || fc.rare >= cubeRates.rareToEpic.guarantee) {
-            next = '에픽';
-            fc.rare = 0;
-          } else {
-            fc.rare++;
-          }
-        } else if (gradePrev === '에픽') {
-          if (Math.random() < cubeRates.epicToUnique.rate || fc.epic >= cubeRates.epicToUnique.guarantee) {
-            next = '유니크';
-            fc.epic = 0;
-          } else {
-            fc.epic++;
-          }
-        } else if (gradePrev === '유니크') {
-          if (Math.random() < cubeRates.uniqueToLegendary.rate || fc.unique >= cubeRates.uniqueToLegendary.guarantee) {
-            next = '레전드리';
-            fc.unique = 0;
-          } else {
-            fc.unique++;
-          }
-        }
-        return fc;
-      });
+    const numResults = isMvpBlackMode ? 3 : 1;
+    const afterResults: PotentialResult[] = [];
+    let lastFailCounters = currentFailCount;
 
-      // 라인 갱신
-      setTimeout(() => generate(false), 0);
-      return next;
-    });
-  }, [currentGrade, generate, isAdditionalMode, selectedItem]);
-
-  /** 등급 업그레이드 (에디셔널) */
-  const upgradeAdditionalGrade = useCallback(() => {
-    if (!selectedItem || !isAdditionalMode) {
-      if (!selectedItem) alert('아이템 정보를 먼저 저장해주세요.');
-      return;
+    for (let i = 0; i < numResults; i++) {
+      const { result, nextFailCounters } = _generateNewPotentialSet(currentItemGrade, lastFailCounters, isAdditionalMode);
+      afterResults.push(result);
+      lastFailCounters = nextFailCounters;
     }
-    // 이미 최고 등급이면 종료
-    if (additionalCurrentGrade === '레전드리') return;
+    
+    // --- 추가: 등급업 발생 여부 체크 ---
+    const beforeGradeValue = gradeOrder[beforeResult.grade];
+    const gradeUpOccurred = afterResults.some(result => gradeOrder[result.grade] > beforeGradeValue);
 
-    setAdditionalCurrentGrade((gradePrev) => {
-      let next = gradePrev;
-      setAdditionalFailCount((prev) => {
-        const fc = { ...prev };
+    // 상태 업데이트
+    if (isAdditionalMode) {
+      setAdditionalFailCount(lastFailCounters);
+    } else {
+      setFailCount(lastFailCounters);
+    }
+    setCubeResults({ before: beforeResult, after: afterResults, gradeUpOccurred }); // gradeUpOccurred 결과 저장
 
-        if (gradePrev === '레어') {
-          if (
-            Math.random() < additionalCubeRates.rareToEpic.rate ||
-            fc.rare >= additionalCubeRates.rareToEpic.guarantee
-          ) {
-            next = '에픽';
-            fc.rare = 0;
-          } else {
-            fc.rare++;
-          }
-        } else if (gradePrev === '에픽') {
-          if (
-            Math.random() < additionalCubeRates.epicToUnique.rate ||
-            fc.epic >= additionalCubeRates.epicToUnique.guarantee
-          ) {
-            next = '유니크';
-            fc.epic = 0;
-          } else {
-            fc.epic++;
-          }
-        } else if (gradePrev === '유니크') {
-          if (
-            Math.random() < additionalCubeRates.uniqueToLegendary.rate ||
-            fc.unique >= additionalCubeRates.uniqueToLegendary.guarantee
-          ) {
-            next = '레전드리';
-            fc.unique = 0;
-          } else {
-            fc.unique++;
-          }
-        }
-        return fc;
-      });
+  }, [selectedItem, isAdditionalMode, isMvpBlackMode, currentGrade, additionalCurrentGrade, currentLines, additionalCurrentLines, failCount, additionalFailCount, _generateNewPotentialSet]);
 
-      // 라인 갱신
-      setTimeout(() => generate(true), 0);
-      return next;
-    });
-  }, [additionalCurrentGrade, generate, isAdditionalMode, selectedItem]);
+  /** 결과물 중 하나를 현재 아이템에 적용 */
+  const applyResult = useCallback((result: PotentialResult | null) => {
+    if (!result) { // Before 옵션 선택 혹은 취소
+        setCubeResults({ before: null, after: [], gradeUpOccurred: false });
+        return;
+    }
+    
+    if (isAdditionalMode) {
+        setAdditionalCurrentGrade(result.grade);
+        setAdditionalCurrentLines(result.lines);
+    } else {
+        setCurrentGrade(result.grade);
+        setCurrentLines(result.lines);
+    }
 
-  /** 버튼 핸들러 (기본 큐브) */
-  const onClickCube = useCallback(() => {
-    setIsAdditionalMode(false);
-    upgradeGrade();
-  }, [upgradeGrade]);
+    // 결과 창 닫기
+    setCubeResults({ before: null, after: [], gradeUpOccurred: false });
+  }, [isAdditionalMode]);
 
-  /** 버튼 핸들러 (에디셔널 큐브) */
-  const onClickAdditionalCube = useCallback(() => {
-    setIsAdditionalMode(true);
-    upgradeAdditionalGrade();
-  }, [upgradeAdditionalGrade]);
-
-  /** 표시용 문자열 */
-  const failText = useMemo(
-    () =>
-      `레어 실패: ${failCount.rare}/${cubeRates.rareToEpic.guarantee} | ` +
-      `에픽 실패: ${failCount.epic}/${cubeRates.epicToUnique.guarantee} | ` +
-      `유니크 실패: ${failCount.unique}/${cubeRates.uniqueToLegendary.guarantee}`,
+  /** 표시용 텍스트 (기존과 동일) */
+   const failText = useMemo(
+    () => `레어 실패: ${failCount.rare}/${cubeRates.rareToEpic.guarantee} | 에픽 실패: ${failCount.epic}/${cubeRates.epicToUnique.guarantee} | 유니크 실패: ${failCount.unique}/${cubeRates.uniqueToLegendary.guarantee}`,
     [failCount]
   );
-
   const additionalFailText = useMemo(
-    () =>
-      `레어 실패: ${additionalFailCount.rare}/${additionalCubeRates.rareToEpic.guarantee} | ` +
-      `에픽 실패: ${additionalFailCount.epic}/${additionalCubeRates.epicToUnique.guarantee} | ` +
-      `유니크 실패: ${additionalFailCount.unique}/${additionalCubeRates.uniqueToLegendary.guarantee}`,
+    () => `레어 실패: ${additionalFailCount.rare}/${additionalCubeRates.rareToEpic.guarantee} | 에픽 실패: ${additionalFailCount.epic}/${additionalCubeRates.epicToUnique.guarantee} | 유니크 실패: ${additionalFailCount.unique}/${additionalCubeRates.uniqueToLegendary.guarantee}`,
     [additionalFailCount]
   );
 
-  const gradeBox = useMemo(
-    () => ({
-      color: gradeColors[currentGrade],
-      label: currentGrade,
-    }),
-    [currentGrade]
-  );
+  /** 현재 등급에 맞는 색상과 라벨 (기존과 유사) */
+  const activeGradeBox = useMemo(() => {
+    const grade = isAdditionalMode ? additionalCurrentGrade : currentGrade;
+    return {
+      color: gradeColors[grade],
+      label: isAdditionalMode ? `${grade} (에디셔널)` : grade,
+    };
+  }, [isAdditionalMode, currentGrade, additionalCurrentGrade]);
 
-  const gradeBoxAdditional = useMemo(
-    () => ({
-      color: gradeColors[additionalCurrentGrade],
-      label: `${additionalCurrentGrade} (에디셔널)`,
-    }),
-    [additionalCurrentGrade]
-  );
+  const activeLines = isAdditionalMode ? additionalCurrentLines : currentLines;
 
   return {
-    // 아이템/모드
-    selectedItem,
+    // 설정
+    isMvpBlackMode,
+    setMvpBlackMode,
+    isMiracleTime,
+    setMiracleTime,
     isAdditionalMode,
     setIsAdditionalMode,
     saveItem,
-
-    // 등급 & 카운터
+    
+    // 현재 아이템 상태
     currentGrade,
     additionalCurrentGrade,
-    failCount,
-    additionalFailCount,
+    line1: activeLines[0],
+    line2: activeLines[1],
+    line3: activeLines[2],
+    
+    // 큐브 결과
+    cubeResults,
+    
+    // 액션
+    handleCubeReroll,
+    applyResult,
 
-    // 라인 결과
-    line1,
-    line2,
-    line3,
-
-    // 표시/색상
+    // 표시용
     failText,
     additionalFailText,
-    gradeBox,
-    gradeBoxAdditional,
-
-    // 액션
-    onClickCube,
-    onClickAdditionalCube,
-    upgradeGrade,
-    upgradeAdditionalGrade,
-    generate,
+    activeGradeBox,
+    gradeColors,
+    gradeOrder,
   };
 }

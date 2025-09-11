@@ -21,38 +21,56 @@
   text-align: center;
 }
 
-/* 검색창 */
+/* ===================================
+  검색창 (수정된 부분)
+  =================================== */
 .searchBar {
   position: fixed;
   top: 100px;
   left: 50%;
   transform: translateX(-50%);
-  width: 60%;
-  max-width: 600px;
+  width: 90%; /* 모바일 화면을 위해 너비 조정 */
+  max-width: 500px; /* 최대 너비 살짝 줄임 */
   text-align: center;
   z-index: 100;
 }
 
 .searchInput {
   width: 100%;
-  padding: 12px 20px;
-  font-size: 18px;
-  border: 2px solid #555;
-  border-radius: 30px;
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  /* 패딩을 조절하여 아이콘 공간 확보 */
+  padding: 15px 20px 15px 50px;
+  font-size: 16px;
+  font-weight: 500;
+  
+  /* --- 디자인 변경 --- */
+  color: #f0f0f0;
+  background-color: rgba(20, 20, 25, 0.65); /* 더 어둡고 불투명한 배경 */
+  backdrop-filter: blur(10px) saturate(120%); /* 프로스트 글래스 효과 */
+  border: 1px solid rgba(255, 255, 255, 0.15); /* 테두리 변경 */
+  border-radius: 12px; /* 살짝 각진 형태로 변경 */
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4); /* 입체감을 위한 그림자 */
+  
+  /* --- 아이콘 추가 --- */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 18px center;
+  
   outline: none;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease-in-out;
 }
 
 .searchInput::placeholder {
-  color: #ccc;
+  color: #999; /* 플레이스홀더 색상 변경 */
 }
 
+/* 포커스 시 테마 색상(금색)으로 강조 */
 .searchInput:focus {
-  border-color: #00bfff;
-  background-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(25, 25, 30, 0.7);
+  border-color: rgba(255, 215, 0, 0.8);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2), 0 5px 20px rgba(0, 0, 0, 0.4);
 }
+/* =================================== */
+
 
 /* 카테고리 */
 .category {
@@ -81,8 +99,8 @@
 }
 
 /* ===================================
-   3D 카드 스타일 (이 부분을 추가)
-   =================================== */
+  3D 카드 스타일
+  =================================== */
 .card {
   position: relative;
   width: 100%;

@@ -1,70 +1,221 @@
-/* 페이지 전체 배경 */
+/* --- 1. 기본 레이아웃 및 배경 --- */
 .page {
-  font-family: Arial, sans-serif;
-  background-color: #f4f4f4;
-  padding: 20px;
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-/* 카드 컨테이너 */
-.container {
-  max-width: 600px;
-  width: 100%;
-  background-color: white;
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR',
+    'Malgun Gothic', sans-serif;
+  background-color: #1a1a2e;
+  background-image: linear-gradient(135deg, #1a1a2e 0%, #16213e 74%);
+  background-size: cover;
+  background-position: center;
 }
 
-/* 입력 필드 */
+.container {
+  width: 100%;
+  max-width: 480px;
+  padding: 35px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(23, 27, 41, 0.75);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.125);
+}
+
+/* --- 2. 제목 및 섹션 --- */
+.title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #f0f0f0;
+  margin-bottom: 25px;
+}
+
+.section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* --- 3. 입력 필드 및 그룹 --- */
+.inputGroup {
+  display: flex;
+  gap: 10px;
+}
+/* 이메일 및 인증코드 입력 그룹 간 간격 추가 */
+.section > .inputGroup:not(:last-child) {
+    margin-bottom: 5px;
+}
+
+
 .input {
-  padding: 10px;
-  margin-top: 10px;
-  width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  flex-grow: 1;
+  padding: 12px 15px;
   font-size: 16px;
+  background-color: #ffffff;
+  border: 1px solid #4a4a6a;
+  border-radius: 8px;
+  color: #111;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* 버튼 */
+.input::placeholder {
+  color: #888;
+}
+
+.input:focus {
+  border-color: #4a69ff;
+  box-shadow: 0 0 0 3px rgba(74, 105, 255, 0.25);
+}
+
+/* --- 4. 버튼 스타일 --- */
 .button {
-  padding: 10px;
-  margin-top: 10px;
-  width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  padding: 12px 20px;
   font-size: 16px;
-  background-color: #007bff;
-  color: white;
+  font-weight: 500;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+  white-space: nowrap;
 }
 
-.button:hover {
-  background-color: #0056b3;
-}
-
-/* 이메일 인증 영역 */
-.emailVerificationSection {
-  display: none;
-}
-
-/* 중복 확인/인증용 작은 버튼 */
+/* 확인/전송 등 보조 액션 버튼 */
 .checkButton {
-  margin-top: 5px;
-  background-color: #6c757d;
-  color: white;
-  width: auto;
-  padding: 5px 10px;
-  font-size: 14px;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 500;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+  white-space: nowrap;
+  background-color: #5a6268;
+  color: white;
+}
+.checkButton:hover {
+  background-color: #4a4f54;
 }
 
-.checkButton:hover {
-  background-color: #5a6268;
+/* 다음/이전 등 네비게이션 버튼 */
+.navButton {
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+  white-space: nowrap;
+  background-color: #3b5998;
+  color: white;
+  flex-grow: 1;
+}
+.navButton:hover {
+  background-color: #2f477a;
+}
+.navButton:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 이전 버튼 (회색) */
+.prevButton {
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, opacity 0.2s;
+    white-space: nowrap;
+    background-color: #6c757d;
+    color: white;
+    flex-grow: 1;
+}
+.prevButton:hover {
+    background-color: #5a6268;
+}
+.prevButton:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* 최종 회원가입 버튼 */
+.submitButton {
+  padding: 14px;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+  white-space: nowrap;
+  background-color: #3b5998;
+  color: white;
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* --- 5. 상태 메시지 --- */
+.status {
+  font-size: 14px;
+  margin-top: -10px; /* 이전보다 위쪽 마진을 더 줄여 입력 필드와 가깝게 */
+  margin-bottom: 5px; /* 다음 요소와의 간격 확보 */
+  min-height: 20px;
+  text-align: left; /* 이미지처럼 왼쪽 정렬 */
+  padding-left: 5px; /* 왼쪽 여백 추가 */
+}
+/* --- 5. 상태 메시지 --- */
+.status {
+  font-size: 14px;
+  margin-top: -10px;
+  margin-bottom: 5px;
+  min-height: 20px;
+  text-align: left;
+  padding-left: 5px;
+}
+
+.statusPending {
+  font-size: 14px;
+  margin-top: -10px;
+  margin-bottom: 5px;
+  min-height: 20px;
+  text-align: left;
+  padding-left: 5px;
+  color: #ffc107;
+}
+
+.statusSuccess {
+  font-size: 14px;
+  margin-top: -10px;
+  margin-bottom: 5px;
+  min-height: 20px;
+  text-align: left;
+  padding-left: 5px;
+  color: #28a745;
+}
+
+/* --- 6. 네비게이션 및 완료 --- */
+.navigation {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.completionText {
+  color: #e0e0e0;
+  text-align: center;
+  margin: 20px 0;
+  line-height: 1.6;
 }

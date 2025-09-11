@@ -1,0 +1,233 @@
+/* /src/app/bossring/page.module.css */
+
+.navBarWrapper {
+  position: relative;
+  z-index: 1000;
+}
+
+.page {
+  min-height: 100vh;
+  margin: 0;
+  padding: 80px 20px 20px;
+  background-color: #1a202c;
+  color: #e2e8f0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  box-sizing: border-box;
+}
+
+.simContainer {
+  width: 100%;
+  max-width: 900px;
+  background-color: #2d3748;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.header {
+  margin-bottom: 25px;
+}
+.header h1 {
+  font-size: 2.2em;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+.header p {
+  font-size: 1.1em;
+  color: #a0aec0;
+}
+
+.boxSelectionContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.boxCard {
+  background-color: #2a323f;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.boxCard:hover {
+  transform: translateY(-3px);
+  border-color: #4a5568;
+}
+.boxCard h3 {
+  margin-bottom: 0;
+  color: #cbd5e0;
+}
+.boxCard p {
+  color: #a0aec0;
+  font-size: 0.9em;
+  margin-bottom: 0;
+}
+
+.boxImage {
+    width: 100px;
+    height: auto;
+    object-fit: contain;
+}
+
+.selectedBox {
+  border-color: #4299e1;
+  box-shadow: 0 0 15px rgba(66, 153, 225, 0.5);
+}
+
+.resultArea {
+  margin: 20px 0;
+}
+
+.openButton {
+  padding: 15px 30px;
+  font-size: 1.2em;
+  font-weight: bold;
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  margin-bottom: 25px;
+}
+.openButton:hover {
+  background-color: #3182ce;
+  transform: translateY(-2px);
+}
+/* --- 비활성화 버튼 스타일 --- */
+.openButton:disabled {
+  background-color: #718096;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.resultContainer {
+  background-color: #1a202c;
+  border-radius: 8px;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border: 2px solid transparent;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+/* --- 특별 아이템 효과 --- */
+@keyframes specialGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px 5px rgba(255, 220, 119, 0.5);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 30px 10px rgba(255, 220, 119, 0.8);
+    transform: scale(1.03);
+  }
+}
+
+.specialEffect {
+  animation: specialGlow 1.5s infinite ease-in-out;
+  border-color: #ffdd77;
+}
+
+.resultImage {
+  width: 80px;
+  height: 80px;
+}
+
+.resultName {
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.resultLevel {
+  font-size: 1.2em;
+  color: #ffdd77;
+  font-weight: 500;
+}
+
+.infoGrid {
+  border-top: 1px solid #4a5568;
+  border-bottom: 1px solid #4a5568;
+  padding: 20px 0;
+  margin-bottom: 25px;
+}
+
+.infoBox h3 {
+  color: #a0aec0;
+  font-size: 1em;
+  margin-bottom: 8px;
+}
+.infoBox p {
+  font-size: 1.5em;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.listsContainer {
+  display: flex;
+  gap: 20px;
+  text-align: left;
+}
+
+.historyContainer,
+.itemCountContainer {
+  flex: 1;
+  background-color: #2a323f;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.historyContainer h2,
+.itemCountContainer h2 {
+  color: #cbd5e0;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #4a5568;
+}
+
+.customList {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  height: 300px;
+  overflow-y: auto;
+}
+
+.listItem {
+  padding: 10px 5px;
+  border-bottom: 1px solid #374151;
+  font-size: 0.95em;
+  color: #cbd5e0;
+  display: flex;
+  justify-content: space-between;
+}
+.listItem:last-child {
+  border-bottom: none;
+}
+.itemName {
+  flex-grow: 1;
+}
+.itemCount {
+  flex-shrink: 0;
+  font-weight: bold;
+  color: #ffffff;
+  margin-left: 10px;
+}
+
+@media (max-width: 768px) {
+  .listsContainer {
+    flex-direction: column;
+  }
+}
