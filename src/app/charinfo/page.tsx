@@ -1,6 +1,7 @@
 // /src/app/charinfo/page.tsx
 
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import NavBar from '@/features/common/NavBar';
 import CharInfoClient from '@/features/charinfo/CharInfoClient';
 
@@ -17,14 +18,16 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: '/assets/images/logo.png',
-  }
+  },
 };
 
 export default function CharInfoPage() {
   return (
     <>
       <NavBar />
-      <CharInfoClient />
+      <Suspense fallback={null}>
+        <CharInfoClient />
+      </Suspense>
     </>
   );
 }

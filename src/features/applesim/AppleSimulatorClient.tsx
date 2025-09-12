@@ -1,8 +1,7 @@
-// src/features/applesim/AppleSimulatorClient.tsx
-
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import styles from '@/app/applesim/page.module.css';
 import { items, simulatePlatinumApple, isRare, SPIN_COST, Item } from '@/features/applesim/AppleSim';
 
@@ -56,10 +55,13 @@ export default function AppleSimulatorClient() {
         </div>
 
         <div className={styles.resultContainer}>
-          <img 
+          <Image 
               src={result.name === '버튼을 눌러 시작하세요!' ? `/assets/images/${result.image}` : `/assets/images/items/${result.image}`}
               alt={result.name}
               className={styles.resultImage}
+              width={64}
+              height={64}
+              priority
           />
           <p
             id="result"
