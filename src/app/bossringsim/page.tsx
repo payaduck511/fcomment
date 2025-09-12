@@ -1,175 +1,20 @@
-// /src/app/bossring/page.tsx
+// /src/app/bossringsim/page.tsx
 
-'use client';
-
-import { useState, useMemo, useRef, useEffect } from 'react';
+import type { Metadata } from 'next';
 import NavBar from '@/features/common/NavBar';
-import styles from './page.module.css';
-import {
-  BOXES,
-  BoxId,
-  RingLevel,
-  RingRate,
-  pickWeighted,
-  rollLevel,
-  isSpecialResult,
-} from '@/features/bosring/bossRingData';
+import BossRingSimClient from '@/features/bosring/BossRingSimClient';
 
-// 결과 타입을 정의
-type Result = {
-  ring: RingRate;
-  level: RingLevel | null;
+export const metadata: Metadata = {
+  title: '메이플 보스 반지 상자 시뮬레이터',
+  description: '흑옥, 백옥, 생명의 보스 반지 상자에서 나오는 스킬 반지의 종류와 레벨을 시뮬레이션 해보세요.',
+  keywords: ['메이플스토리', '보스 반지', '반지 상자', '리스트레인트 링', '컨티뉴어스 링', '시뮬레이터'],
 };
 
-export default function BossRingPage() {
-  const [selectedBoxId, setSelectedBoxId] = useState<BoxId | null>(null);
-  const [result, setResult] = useState<Result | null>(null);
-  const [history, setHistory] = useState<Result[]>([]);
-  const [totalOpened, setTotalOpened] = useState(0);
-  const [ringCounts, setRingCounts] = useState<Record<string, number>>({});
-  const [locked, setLocked] = useState(false);
-
-  const specialEffectTimerRef = useRef<number | null>(null);
-
-  const selectedBox = useMemo(
-    () => BOXES.find((box) => box.id === selectedBoxId),
-    [selectedBoxId]
-  );
-
-  const handleOpenBox = () => {
-    if (locked || !selectedBox) return;
-
-    const chosenRing = pickWeighted(selectedBox.ringRates);
-    const isGrindstone = chosenRing.key === 'life-grind';
-    const chosenLevel = isGrindstone ? null : rollLevel(selectedBox.levelRates);
-    const newResult = { ring: chosenRing, level: chosenLevel };
-
-    setResult(newResult);
-    setHistory((prev) => [newResult, ...prev].slice(0, 20));
-    setTotalOpened((prev) => prev + 1);
-
-    const resultName = newResult.level 
-      ? `${newResult.ring.name} (Lv.${newResult.level})`
-      : newResult.ring.name;
-
-    setRingCounts((prev) => ({
-      ...prev,
-      [resultName]: (prev[resultName] || 0) + 1,
-    }));
-
-    // 특별 아이템 당첨 시 3초간 버튼 비활성화 및 효과
-    if (isSpecialResult(newResult)) {
-      setLocked(true);
-      const timerId = window.setTimeout(() => {
-        setLocked(false);
-        specialEffectTimerRef.current = null;
-      }, 3000); // 3초
-      specialEffectTimerRef.current = timerId;
-    }
-  };
-
-  // 컴포넌트 언마운트 시 타이머 정리
-  useEffect(() => {
-    return () => {
-      if (specialEffectTimerRef.current) {
-        clearTimeout(specialEffectTimerRef.current);
-      }
-    };
-  }, []);
-  
-  const sortedRingCounts = Object.entries(ringCounts).sort(([, countA], [, countB]) => countB - countA);
-  const currentResultIsSpecial = isSpecialResult(result);
-
+export default function BossRingSimPage() {
   return (
     <>
-      <div className={styles.navBarWrapper}>
-        <NavBar />
-      </div>
-      <main className={styles.page}>
-        <div className={styles.simContainer}>
-          <div className={styles.header}>
-            <h1>보스 반지 상자 시뮬레이터</h1>
-            <p>원하는 반지를 얻을 때까지 상자를 열어보세요!</p>
-          </div>
-
-          {/* 상자 선택 영역 */}
-          <div className={styles.boxSelectionContainer}>
-            {BOXES.map((box) => (
-              <div
-                key={box.id}
-                className={`${styles.boxCard} ${selectedBoxId === box.id ? styles.selectedBox : ''}`}
-                onClick={() => setSelectedBoxId(box.id)}
-              >
-                <h3>{box.title}</h3>
-                <p>{box.desc}</p>
-                <img 
-                    src={`/assets/images/box/${box.id}.png`} 
-                    alt={box.title} 
-                    className={styles.boxImage} 
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* 버튼 및 결과 표시 영역 */}
-          {selectedBox && (
-            <div className={styles.resultArea}>
-              <button 
-                className={styles.openButton} 
-                onClick={handleOpenBox}
-                disabled={locked}
-              >
-                {selectedBox.title} 열기
-              </button>
-
-              {result && (
-                <div className={`${styles.resultContainer} ${currentResultIsSpecial && locked ? styles.specialEffect : ''}`}>
-                  <img
-                    src={`/assets/images/ring/${result.level ? `${result.ring.key}-${result.level}` : result.ring.key}.png`}
-                    alt={result.ring.name}
-                    className={styles.resultImage}
-                  />
-                  <p className={styles.resultName}>{result.ring.name}</p>
-                  {result.level && <p className={styles.resultLevel}>Lv. {result.level}</p>}
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* 통계 및 기록 */}
-          <div className={styles.infoGrid}>
-             <div className={styles.infoBox}>
-                <h3>총 개봉 횟수</h3>
-                <p><span>{totalOpened}</span> 개</p>
-            </div>
-          </div>
-          
-          <div className={styles.listsContainer}>
-            <div className={styles.historyContainer}>
-              <h2>최근 기록</h2>
-              <ul className={styles.customList}>
-                {history.map((item, i) => (
-                  <li key={i} className={styles.listItem}>
-                    <span>{item.level ? `${item.ring.name} (Lv.${item.level})` : item.ring.name}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className={styles.itemCountContainer}>
-              <h2>획득한 반지/아이템</h2>
-              <ul className={styles.customList}>
-                {sortedRingCounts.map(([name, count]) => (
-                  <li key={name} className={styles.listItem}>
-                    <span className={styles.itemName}>{name}:</span>
-                    <span className={styles.itemCount}>{count}개</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </main>
+      <NavBar />
+      <BossRingSimClient />
     </>
   );
 }

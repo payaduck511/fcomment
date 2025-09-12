@@ -1,76 +1,33 @@
-'use client';
+// /src/app/page.tsx
 
-import { useEffect } from 'react';
+import type { Metadata } from 'next';
 import NavBar from '@/features/common/NavBar';
-import CharacterSearch from '@/features/character/CharacterSearch';
-import CommentList from '@/features/comments/CommentList';
-import styles from './page.module.css';
+import HomeClient from '@/features/home/HomeClient';
+
+export const metadata: Metadata = {
+  title: '메이플 코멘트 | 메이플스토리 시뮬레이터 & 커뮤니티',
+  description: '메이플스토리 플래티넘 애플, 큐브 시뮬레이터와 사냥 쿨다운 트래커, 캐릭터 정보 조회 및 댓글 기능을 제공합니다.',
+  keywords: ['메이플스토리', '메이플 코멘트', '큐브 시뮬레이터', '애플 시뮬레이터', '캐릭터 정보', '쿨다운', '메이플스토리 큐브', '메이플 큐브', '메이플 큐브 시뮬', '메이플스토리 큐브 시뮬'],
+  authors: [{ name: 'comment.pe.kr' }],
+  openGraph: {
+    title: '메이플 코멘트 - 메이플스토리 유저 커뮤니티',
+    description: '플래티넘 애플, 큐브 시뮬레이터와 사냥 쿨다운 트래커 등 다양한 편의 기능을 이용해보세요.',
+    images: [{
+        url: 'https://comment.pe.kr/assets/images/logo.png',
+        alt: '메이플 코멘트 로고'
+    }],
+    url: 'https://comment.pe.kr',
+  },
+  icons: {
+    icon: '/assets/images/logo.png',
+  }
+};
 
 export default function HomePage() {
-  // 우클릭 방지
-  useEffect(() => {
-    const blockContextMenu = (e: MouseEvent) => e.preventDefault();
-    document.addEventListener('contextmenu', blockContextMenu);
-    return () => document.removeEventListener('contextmenu', blockContextMenu);
-  }, []);
-
   return (
     <>
       <NavBar />
-
-      <main className={styles.page}>
-        {/* ---------- Hero Section ---------- */}
-        <section className={styles.hero}>
-          <div className={styles.heroInner}>
-            <h1 className={styles.title}>MapleStory Comment</h1>
-            <p className={styles.subtitle}>
-              직업 채팅 · 시뮬레이터 · 실시간 댓글
-            </p>
-
-            <div className={styles.heroControls}>
-              {/* 검색 */}
-              <div className={styles.searchWrap}>
-                <CharacterSearch />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ---------- Comment Grid ---------- */}
-        <section className={styles.grid}>
-          <article className={styles.card}>
-            <header className={styles.cardHeader}>
-              <h2>실시간</h2>
-              <span className={styles.cardHint}>최신 댓글</span>
-            </header>
-            <div className={styles.cardBody}>
-              <CommentList mode="recent" />
-            </div>
-          </article>
-
-          <article className={styles.card}>
-            <header className={styles.cardHeader}>
-              <h2>인기 댓글</h2>
-              <span className={styles.cardHint}>좋아요 순</span>
-            </header>
-            <div className={styles.cardBody}>
-              <CommentList mode="popular" />
-            </div>
-          </article>
-        </section>
-
-        {/* ---------- Footer ---------- */}
-        <footer className={styles.footer}>
-          <p>
-            discord:{' '}
-            <a href="https://discord.gg/RBKEB8d9" target="_blank" rel="noreferrer">
-              클릭
-            </a>
-          </p>
-          <p>e-mail : payaduck@naver.com</p>
-          <p>Data Based on NEXON OPEN API</p>
-        </footer>
-      </main>
+      <HomeClient />
     </>
   );
 }
