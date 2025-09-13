@@ -1,223 +1,189 @@
-/* charinfo/page.module.css */
-
-/* 페이지 컨테이너 */
-.container {
-  max-width: 900px;
-  margin: 100px auto 0;
-  padding: 20px;
-  background-color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,.1);
+/* === 전역 및 레이아웃 === */
+.page {
+  display: flex;
+  gap: 30px;
+  min-height: 100vh;
+  padding: 30px;
+  margin: 0;
+  background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+  color: #E5E7EB;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  box-sizing: border-box;
 }
 
-/* 타이틀 */
-.title {
-  font-size: 24px;
+.centeredContainer {
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+.message {
+  font-size: 1.2rem;
+  color: #9CA3AF;
+}
+
+/* === 좌측 프로필 패널 === */
+.profilePanel {
+  flex: 0 0 350px;
+  background-color: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 30px;
+  box-sizing: border-box;
   text-align: center;
-  margin: 0 0 10px;
+  align-self: flex-start; /* 스크롤 되어도 상단에 고정 */
+  position: sticky;
+  top: 30px;
+}
+
+.characterImageContainer {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: -80px auto 20px; /* 위로 살짝 튀어나오게 */
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  position: relative;
+  background-color: #1F2937;
+}
+.characterImageContainer img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.characterName {
+  font-size: 2.2em;
   font-weight: 700;
+  color: #F9FAFB;
+  margin-bottom: 25px;
+  word-break: keep-all;
 }
 
-/* 섹션 */
-.characterInfo,
-.equipmentInfo,
-.cashEquipmentInfo {
-  margin: 20px 0;
+.characterDetails p {
+  font-size: 1.1em;
+  color: #D1D5DB;
+  margin: 12px 0;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #374151;
+  padding-bottom: 12px;
+}
+.characterDetails p:last-child {
+  border-bottom: none;
+}
+.characterDetails p strong {
+  color: #9CA3AF;
+  font-weight: 500;
+}
+.characterDetails p span {
+  font-weight: 600;
+  color: #F9FAFB;
 }
 
-/* 장비 및 캐시 아이템 그리드 */
-.equipmentGrid,
-.cashGrid {
+/* === 우측 장비 패널 === */
+.equipmentPanel {
+  flex: 1;
+  background-color: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  border-bottom: 1px solid #374151;
+  padding-bottom: 20px;
+}
+.panelHeader h2 {
+  font-size: 1.8em;
+  font-weight: 600;
+  margin: 0;
+}
+
+.presetButtons button {
+  margin-left: 10px;
+  padding: 10px 20px;
+  background-color: #374151;
+  color: #D1D5DB;
+  border: 1px solid #4B5563;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.presetButtons button:hover {
+  background-color: #4B5563;
+  color: #fff;
+}
+.presetButtons button.active {
+  background-color: #3B82F6;
+  color: #fff;
+  border-color: #3B82F6;
+  font-weight: 600;
+}
+
+/* === 장비 그리드 === */
+.equipmentGrid {
   display: grid;
-  grid-template-columns: repeat(5, 64px);
-  grid-template-rows: repeat(6, 64px);
-  gap: 10px;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(6, auto);
+  gap: 15px;
   justify-items: center;
   align-items: center;
+  /* 캐릭터 실루엣 배경 이미지가 있다면 아래 주석을 해제하세요 */
+  /* background-image: url('/assets/images/character-silhouette.png'); */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
   padding: 20px;
 }
 
-/* 각 칸 */
-.equipmentItem,
-.cashItem {
-  width: 64px;
-  height: 64px;
-  border: 2px solid #ccc;
-  border-radius: 5px;
-  background-color: #f9f9f9;
+.equipmentSlot {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  background-color: rgba(49, 60, 78, 0.5); /* #313c4e */
+  border: 1px solid #4B5563;
   display: flex;
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
   overflow: hidden;
   position: relative;
-  transition: box-shadow .3s ease;
+  transition: all .2s ease;
 }
 
-.equipmentItem.empty {
-  background-color: #fff;
+.equipmentSlot.emptySlot {
+  background-color: transparent;
+  border: 1px dashed #4B5563;
+  opacity: 0.5;
 }
 
-/* 이미지 */
-.equipmentItem img,
-.cashItem img {
+.equipmentSlot:not(.emptySlot):hover {
+    transform: scale(1.1);
+    z-index: 10;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+
+.equipmentSlot img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
 
-/* 프리셋 버튼 */
-.presetButtons button {
-  margin-right: 10px;
-  padding: 10px;
-  background-color: #ffa500;
-  color: #fff;
-  border: 0;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-/* 등급 테두리 효과 */
-.equipmentItem[data-grade="레어"] {
-  box-shadow: inset 0 0 5px 2px skyblue;
-}
-.equipmentItem[data-grade="에픽"] {
-  box-shadow: inset 0 0 5px 2px purple;
-}
-.equipmentItem[data-grade="유니크"] {
-  box-shadow: inset 0 0 5px 2px yellow;
-}
-.equipmentItem[data-grade="레전드리"] {
-  box-shadow: inset 0 0 5px 2px lightgreen;
-}
-
-/* 장비 슬롯 그리드 위치 (ID는 JS가 사용 중이므로 유지) */
-#ring-4 { grid-area: 1 / 1 / 2 / 2; }
-#empty-slot-1 { grid-area: 1 / 2 / 2 / 3; }
-#hat { grid-area: 1 / 3 / 2 / 4; }
-#empty-slot-2 { grid-area: 1 / 4 / 2 / 5; }
-#emblem { grid-area: 1 / 5 / 2 / 6; }
-
-#ring-3 { grid-area: 2 / 1 / 3 / 2; }
-#pendant-2 { grid-area: 2 / 2 / 3 / 3; }
-#face-accessory { grid-area: 2 / 3 / 3 / 4; }
-#empty-slot-3 { grid-area: 2 / 4 / 3 / 5; }
-#badge { grid-area: 2 / 5 / 3 / 6; }
-
-#ring-2 { grid-area: 3 / 1 / 4 / 2; }
-#pendant-1 { grid-area: 3 / 2 / 4 / 3; }
-#eye-accessory { grid-area: 3 / 3 / 4 / 4; }
-#earring { grid-area: 3 / 4 / 4 / 5; }
-#medal { grid-area: 3 / 5 / 4 / 6; }
-
-#ring-1 { grid-area: 4 / 1 / 5 / 2; }
-#weapon { grid-area: 4 / 2 / 5 / 3; }
-#top { grid-area: 4 / 3 / 5 / 4; }
-#shoulder { grid-area: 4 / 4 / 5 / 5; }
-#secondary-weapon { grid-area: 4 / 5 / 5 / 6; }
-
-#pocket-item { grid-area: 5 / 1 / 6 / 2; }
-#belt { grid-area: 5 / 2 / 6 / 3; }
-#bottom { grid-area: 5 / 3 / 6 / 4; }
-#gloves { grid-area: 5 / 4 / 6 / 5; }
-#cloak { grid-area: 5 / 5 / 6 / 6; }
-
-#empty-slot-4 { grid-area: 6 / 1 / 7 / 2; }
-#empty-slot-5 { grid-area: 6 / 2 / 7 / 3; }
-#shoes { grid-area: 6 / 3 / 7 / 4; }
-#empty-slot-6 { grid-area: 6 / 4 / 7 / 5; }
-#mechanical-heart { grid-area: 6 / 5 / 7 / 6; }
-
-/* 툴팁 */
-.tooltip {
-  position: absolute;
-  background-color: rgba(0,0,0,.8);
-  color: #fff;
-  padding: 10px;
-  border-radius: 5px;
-  z-index: 9999;
-  display: none;
-  max-width: 300px;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  text-align: center;
-}
-
-.tooltip p {
-  margin: 5px 0;
-  font-size: 14px;
-}
-.tooltip p:nth-of-type(2) {
-  font-size: 16px;
-  font-weight: 700;
-}
-.tooltipHeader {
-  text-align: center;
-  margin-bottom: 10px;
-}
-.tooltipContent {
-  text-align: left;
-  margin-top: 10px;
-}
-.tooltip hr {
-  border: none;
-  border-top: 1px solid #ccc;
-  margin: 10px 0;
-}
-
-/* 아이템 미리보기 박스 */
-.itemImageContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #fff;
-  padding: 7px;
-  border: 2px solid transparent;
-  border-radius: 5px;
-  margin: 10px auto;
-  width: 60px;
-  height: 60px;
-  box-shadow: 0 0 5px rgba(0,0,0,.1);
-  overflow: hidden;
-}
-.itemImageContainer.레어 { border-color: skyblue; }
-.itemImageContainer.에픽 { border-color: purple; }
-.itemImageContainer.유니크 { border-color: yellow; }
-.itemImageContainer.레전드리 { border-color: lightgreen; }
-
-.itemImage {
-  width: 120%;
-  height: 120%;
-  object-fit: cover;
-  object-position: center;
-}
-
-/* 별(스타포스) 아이콘/레이아웃 */
-.starContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-}
-
-.starLine {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-.starGroup {
-  display: flex;
-  flex-direction: row;
-  gap: 2px;
-}
-
-.starIcon {
-  background-image: url('/assets/images/star.png');
-  background-size: cover;
-  width: 16px;
-  height: 16px;
-  display: inline-block;
-}
+/* 등급별 테두리 효과 */
+.equipmentSlot[data-grade="레어"] { box-shadow: inset 0 0 8px 2px #60A5FA; border-color: #60A5FA; }
+.equipmentSlot[data-grade="에픽"] { box-shadow: inset 0 0 8px 2px #A78BFA; border-color: #A78BFA; }
+.equipmentSlot[data-grade="유니크"] { box-shadow: inset 0 0 8px 2px #FBBF24; border-color: #FBBF24; }
+.equipmentSlot[data-grade="레전드리"] { box-shadow: inset 0 0 8px 2px #4ADE80; border-color: #4ADE80; }
