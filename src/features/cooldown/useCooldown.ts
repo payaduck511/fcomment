@@ -1,68 +1,86 @@
-// src/features/cooldown/useCooldown.ts
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** 해상도 문자열 예: "1280x720" */
 export type Resolution = `${number}x${number}`;
-
 type NumberTemplates = Record<number, HTMLImageElement>;
+type TemplateBinCache = Record<number, ImageData>;
 
-export function useCooldown(initialResolution: Resolution = '1280x720') {
-  // ---- Refs ----
+/**
+ * @param binImage
+ * @returns
+ */
+function isSingleDigitSix(binImage: ImageData): boolean {
+  const { width, height, data } = binImage;
+  const leftHalfWidth = Math.floor(width / 2);
+  let yellowPixelCount = 0;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < leftHalfWidth; x++) {
+      const index = (y * width + x) * 4;
+      if (data[index] === 0) {
+        yellowPixelCount++;
+      }
+    }
+  }
+  const PIXEL_THRESHOLD = 5;
+  return yellowPixelCount < PIXEL_THRESHOLD;
+}
+
+
+export function useCooldown(initialResolution: Resolution = '1366x768') {
   const videoWrapperRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cropAreaRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // ---- 상태 ----
   const [resolution, setResolution] = useState<Resolution>(initialResolution);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isClickMode, setIsClickMode] = useState(false);
   const [cropConfirmed, setCropConfirmed] = useState(false);
   const [isHuntingActive, setIsHuntingActive] = useState(false);
-  const [statusText, setStatusText] = useState<string>('대기중');
 
+  const [statusText, setStatusText] = useState<string>('대기중');
   const [clickX, setClickX] = useState(0);
   const [clickY, setClickY] = useState(0);
 
-  // 알람 선택/음량
-  const [firstAlarmSrc, setFirstAlarmSrc] = useState<string>('/assets/Sound/alarm.mp3');
-  const [secondAlarmSrc, setSecondAlarmSrc] = useState<string>('/assets/Sound/money.mp3');
+  const [firstAlarmSrc, setFirstAlarmSrc] = useState<string>('/assets/sound/BikBik.mp3');
+  const [secondAlarmSrc, setSecondAlarmSrc] = useState<string>('/assets/sound/dingdong.mp3');
   const firstAlarmRef = useRef<HTMLAudioElement | null>(null);
   const secondAlarmRef = useRef<HTMLAudioElement | null>(null);
   const [firstVolume, setFirstVolume] = useState(1);
   const [secondVolume, setSecondVolume] = useState(1);
 
-  // 내부 전역
-  const boxWidth = 28;
-  const boxHeight = 28;
+  const boxWidth = 40;
+  const boxHeight = 40;
+
   const numberTemplatesRef = useRef<NumberTemplates>({});
+  const templateBinCacheRef = useRef<TemplateBinCache>({});
+
   const captureIntervalRef = useRef<number | null>(null);
+  const rVFCHandleRef = useRef<number | null>(null);
+
   const isCooldownRef = useRef(false);
   const alarmIndexRef = useRef<0 | 1>(0);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // 디버깅 캡쳐 미리보기 (선택적 노출)
+  const historyRef = useRef<number[]>([]);
+  const HISTORY_MAX = 5;
+
   const [capturePreview, setCapturePreview] = useState<string>('');
 
-  // -------- 해상도 적용(래퍼 사이즈) --------
-  const applyWrapperSize = useCallback(
-    (res: Resolution) => {
-      const wrapper = videoWrapperRef.current;
-      if (!wrapper) return;
-      const [w, h] = res.split('x').map(Number);
-      wrapper.style.width = `${w}px`;
-      wrapper.style.height = `${h}px`;
-    },
-    []
-  );
+  const applyWrapperSize = useCallback((res: Resolution) => {
+    const wrapper = videoWrapperRef.current;
+    if (!wrapper) return;
+    const [w, h] = res.split('x').map(Number);
+    wrapper.style.width = `${w}px`;
+    wrapper.style.height = `${h}px`;
+  }, []);
 
   useEffect(() => {
     applyWrapperSize(resolution);
   }, [resolution, applyWrapperSize]);
 
-  // -------- 화면공유 시작/중단 --------
   const stopScreenShare = useCallback(() => {
     streamRef.current?.getTracks()?.forEach((t) => t.stop());
     streamRef.current = null;
@@ -85,159 +103,274 @@ export function useCooldown(initialResolution: Resolution = '1280x720') {
         videoRef.current.srcObject = stream;
       }
       setIsScreenSharing(true);
-      // 트랙 종료 시 자동 정리 (모든 트랙에 대해 바인딩)
       stream.getTracks().forEach((t) => {
-        try {
-          t.addEventListener('ended', stopScreenShare);
-        } catch {
-          /* 노이즈 무시 */
-        }
+        try { t.addEventListener('ended', stopScreenShare); } catch {}
       });
     } catch (e) {
       console.error('화면 공유 실패:', e);
     }
   }, [isScreenSharing, stopScreenShare]);
 
-  // -------- 자르기/확정 --------
   const enterCropMode = useCallback(() => {
     setIsClickMode(true);
     setCropConfirmed(false);
     if (cropAreaRef.current) cropAreaRef.current.style.display = 'none';
   }, []);
 
+  // ================== [수정된 부분] ==================
   const onWrapperClick = useCallback(
     (e: React.MouseEvent) => {
-      if (!isClickMode || !videoWrapperRef.current || !cropAreaRef.current) return;
-      const rect = videoWrapperRef.current.getBoundingClientRect();
-      const offsetX = e.clientX - rect.left;
-      const offsetY = e.clientY - rect.top;
+      if (!isClickMode || !videoWrapperRef.current || !cropAreaRef.current || !videoRef.current) return;
 
-      // 범위 가드
-      if (offsetX < 0 || offsetY < 0 || offsetX > rect.width || offsetY > rect.height) return;
+      const wrapperRect = videoWrapperRef.current.getBoundingClientRect();
+      const videoRect = videoRef.current.getBoundingClientRect();
 
-      setClickX(offsetX);
-      setClickY(offsetY);
+      // 클릭 지점이 비디오 영역 밖이면 무시
+      if (e.clientX < videoRect.left || e.clientX > videoRect.right || e.clientY < videoRect.top || e.clientY > videoRect.bottom) return;
+
+      // 클릭 지점을 중앙이 아닌 '왼쪽 위' 좌표로 설정합니다.
+      let leftInVideo = e.clientX - videoRect.left;
+      let topInVideo  = e.clientY - videoRect.top;
+
+      // 자른 영역이 비디오 밖으로 나가지 않도록 경계 값을 보정합니다.
+      leftInVideo = Math.max(0, Math.min(leftInVideo, Math.floor(videoRect.width  - boxWidth)));
+      topInVideo  = Math.max(0, Math.min(topInVideo,  Math.floor(videoRect.height - boxHeight)));
+
+      // 이 좌표를 캡처와 빨간 상자 표시에 모두 사용합니다.
+      setClickX(leftInVideo);
+      setClickY(topInVideo);
 
       const crop = cropAreaRef.current;
-      crop.style.left = `${offsetX}px`;
-      crop.style.top = `${offsetY}px`;
-      crop.style.width = `${boxWidth}px`;
+      const offsetLeft = videoRect.left - wrapperRect.left;
+      const offsetTop  = videoRect.top  - wrapperRect.top;
+      crop.style.left = `${offsetLeft + leftInVideo}px`;
+      crop.style.top  = `${offsetTop  + topInVideo }px`;
+      crop.style.width  = `${boxWidth}px`;
       crop.style.height = `${boxHeight}px`;
       crop.style.display = 'block';
     },
-    [isClickMode]
+    [isClickMode, boxWidth, boxHeight]
   );
+  // ===============================================
 
   const confirmCrop = useCallback(() => {
     if (!isClickMode) return;
     setCropConfirmed(true);
     setIsClickMode(false);
-    // 캔버스 사이즈 고정
     if (canvasRef.current) {
       canvasRef.current.width = boxWidth;
       canvasRef.current.height = boxHeight;
     }
-  }, [isClickMode]);
+  }, [isClickMode, boxWidth, boxHeight]);
 
-  // -------- 사냥 토글 --------
   const clearCaptureInterval = () => {
     if (captureIntervalRef.current) {
       window.clearInterval(captureIntervalRef.current);
       captureIntervalRef.current = null;
     }
   };
+  const clearVideoFrameCallback = () => {
+    if (rVFCHandleRef.current != null && videoRef.current && 'cancelVideoFrameCallback' in HTMLVideoElement.prototype) {
+      (videoRef.current as any)?.cancelVideoFrameCallback?.(rVFCHandleRef.current);
+      rVFCHandleRef.current = null;
+    }
+  };
 
   const stopHunting = useCallback(() => {
     clearCaptureInterval();
+    clearVideoFrameCallback();
     setIsHuntingActive(false);
     isCooldownRef.current = false;
     alarmIndexRef.current = 0;
+    historyRef.current = [];
     setStatusText('대기중');
-    // 알람 정지
-    if (firstAlarmRef.current) {
-      firstAlarmRef.current.pause();
-      firstAlarmRef.current.currentTime = 0;
-    }
-    if (secondAlarmRef.current) {
-      secondAlarmRef.current.pause();
-      secondAlarmRef.current.currentTime = 0;
-    }
+    if (firstAlarmRef.current) { firstAlarmRef.current.pause(); firstAlarmRef.current.currentTime = 0; }
+    if (secondAlarmRef.current) { secondAlarmRef.current.pause(); secondAlarmRef.current.currentTime = 0; }
   }, []);
 
-  const startCooldownDetection = useCallback(() => {
-    // 인터벌 정리
-    clearCaptureInterval();
+  const toBinaryYellow = useCallback((img: ImageData): ImageData => {
+    const { width: w, height: h, data } = img;
+    const out = new Uint8ClampedArray(w * h * 4);
+    for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      const isYellow = (r > 160 && g > 140 && b < 140 && (r + g - b) > 220);
+      const v = isYellow ? 0 : 255;
+      const k = j * 4;
+      out[k] = out[k + 1] = out[k + 2] = v;
+      out[k + 3] = 255;
+    }
+    return new ImageData(out, w, h);
+  }, []);
 
-    captureIntervalRef.current = window.setInterval(() => {
-      const wrapper = videoWrapperRef.current;
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (!wrapper || !video || !canvas) return;
+  const ensureTemplateBinCache = useCallback(async () => {
+    if (!Object.keys(numberTemplatesRef.current).length) return;
+    const cache = templateBinCacheRef.current;
+    const makeCanvas = () =>
+      (typeof OffscreenCanvas !== 'undefined'
+        ? new OffscreenCanvas(boxWidth, boxHeight) as any
+        : (() => { const c = document.createElement('canvas'); c.width = boxWidth; c.height = boxHeight; return c; })()
+      );
 
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      if (!ctx) return;
+    for (const k of Object.keys(numberTemplatesRef.current)) {
+      const num = Number(k);
+      if (cache[num]) continue;
+      const img = numberTemplatesRef.current[num];
+      if (!img) continue;
 
-      const realW = video.videoWidth;
-      const realH = video.videoHeight;
-      if (!realW || !realH) {
-        // 메타데이터 미로딩
-        return;
+      const oc = makeCanvas();
+      const ctx = oc.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
+      ctx.clearRect(0, 0, boxWidth, boxHeight);
+      ctx.drawImage(img, 0, 0, boxWidth, boxHeight);
+      const raw = ctx.getImageData(0, 0, boxWidth, boxHeight);
+      cache[num] = toBinaryYellow(raw);
+    }
+  }, [boxWidth, boxHeight, toBinaryYellow]);
+
+  const diffBinary = (a: ImageData, b: ImageData): number => {
+    if (a.width !== b.width || a.height !== b.height) return Number.MAX_SAFE_INTEGER;
+    const da = a.data, db = b.data;
+    let diff = 0;
+    for (let i = 0; i < da.length; i += 4) {
+      if (da[i] !== db[i]) diff++;
+    }
+    return diff;
+  };
+
+  const modeOf = (arr: number[]): number => {
+    const m = new Map<number, number>();
+    let best = arr[0] ?? 0, bestC = 0;
+    for (const v of arr) {
+      const c = (m.get(v) ?? 0) + 1;
+      m.set(v, c);
+      if (c > bestC) { bestC = c; best = v; }
+    }
+    return best;
+  };
+
+  const recognizeCooldownFast = useCallback((ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
+    const raw = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const bin = toBinaryYellow(raw);
+
+    let bestNum = 0;
+    let bestDiff = Infinity;
+
+    const cache = templateBinCacheRef.current;
+    const pixels = canvas.width * canvas.height;
+
+    for (const k of Object.keys(cache)) {
+      const num = Number(k);
+      const tdata = cache[num];
+      const d = diffBinary(bin, tdata);
+      if (d < bestDiff) {
+        bestDiff = d;
+        bestNum = num;
       }
+    }
 
-      const rect = wrapper.getBoundingClientRect();
-      const cssW = rect.width;
-      const cssH = rect.height;
-      if (cssW <= 0 || cssH <= 0) return;
+    const score = 1 - bestDiff / pixels;
+    return { value: bestNum, score, bin }; // 이진화된 이미지도 함께 반환
+  }, [toBinaryYellow]);
 
-      const scaleX = realW / cssW;
-      const scaleY = realH / cssH;
+  const frameLoop = useCallback(() => {
+    const wrapper = videoWrapperRef.current;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!wrapper || !video || !canvas) return;
 
-      const srcX = clickX * scaleX;
-      const srcY = clickY * scaleY;
-      const srcW = boxWidth * scaleX;
-      const srcH = boxHeight * scaleY;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
 
-      // 영역 가드(비디오 경계 초과 시 스킵)
-      if (srcX < 0 || srcY < 0 || srcX + srcW > realW || srcY + srcH > realH) return;
+    const realW = video.videoWidth;
+    const realH = video.videoHeight;
+    if (!realW || !realH) return;
 
-      ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, boxWidth, boxHeight);
+    const videoRect = video.getBoundingClientRect();
+    if (videoRect.width <= 0 || videoRect.height <= 0) return;
 
-      // 디버그 미리보기
-      setCapturePreview(canvas.toDataURL());
+    const scaleX = realW / videoRect.width;
+    const scaleY = realH / videoRect.height;
 
-      // 템플릿 로딩 확인
-      if (!Object.keys(numberTemplatesRef.current).length) {
-        setStatusText('템플릿 로딩중…');
-        return;
-      }
+    const baseSrcX = clickX * scaleX;
+    const baseSrcY = clickY * scaleY;
+    const srcW = boxWidth  * scaleX;
+    const srcH = boxHeight * scaleY;
 
-      // 인식
-      const cdValue = recognizeCooldown(ctx, canvas, numberTemplatesRef.current);
-      setStatusText(`작동 = ${isCooldownRef.current ? 'true' : 'false'}`);
+    if (baseSrcX < 0 || baseSrcY < 0 || baseSrcX + srcW > realW || baseSrcY + srcH > realH) return;
 
-      // 50~54 감지 → 쿨다운 타이머
-      if (!isCooldownRef.current) {
-        if (cdValue === 50 || cdValue === 51 || cdValue === 52 || cdValue === 53 || cdValue === 54) {
-          isCooldownRef.current = true;
-          window.setTimeout(() => {
-            const first = firstAlarmRef.current;
-            const second = secondAlarmRef.current;
-            if (alarmIndexRef.current === 0 && first) {
-              first.volume = firstVolume;
-              // 오토플레이 정책 대비
-              first.play().catch(() => {});
-              alarmIndexRef.current = 1;
-            } else if (alarmIndexRef.current === 1 && second) {
-              second.volume = secondVolume;
-              second.play().catch(() => {});
-              alarmIndexRef.current = 0;
-            }
-            isCooldownRef.current = false;
-          }, 48000);
+    let bestScore = -1;
+    let bestVal = 0;
+    let bestBin: ImageData | null = null; // 최고 점수일 때의 이진화 이미지를 저장
+
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const srcX = baseSrcX + dx;
+        const srcY = baseSrcY + dy;
+        ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, boxWidth, boxHeight);
+        const { value, score, bin } = recognizeCooldownFast(ctx, canvas);
+        if (score > bestScore) {
+          bestScore = score;
+          bestVal = value;
+          bestBin = bin; // 최고 점수 이미지 저장
         }
       }
-    }, 500);
-  }, [clickX, clickY, firstVolume, secondVolume]);
+    }
+
+    setCapturePreview(canvas.toDataURL());
+
+    if (!Object.keys(templateBinCacheRef.current).length) {
+      setStatusText('템플릿 로딩중…');
+      return;
+    }
+
+    const SCORE_THRESHOLD = 0.70;
+    if (bestScore >= SCORE_THRESHOLD) {
+      const hist = historyRef.current;
+      hist.push(bestVal);
+      if (hist.length > HISTORY_MAX) hist.shift();
+      const stable = modeOf(hist);
+
+      setStatusText(`감지: ${stable} (${bestScore.toFixed(2)})`);
+
+      if (stable % 10 === 6 && !isCooldownRef.current && bestBin) {
+        if (isSingleDigitSix(bestBin)) {
+          isCooldownRef.current = true;
+          const first = firstAlarmRef.current;
+          const second = secondAlarmRef.current;
+          if (alarmIndexRef.current === 0 && first) {
+            first.volume = firstVolume;
+            first.play().catch(e => console.error("첫 번째 알람 재생 실패:", e));
+            alarmIndexRef.current = 1;
+          } else if (alarmIndexRef.current === 1 && second) {
+            second.volume = secondVolume;
+            second.play().catch(e => console.error("두 번째 알람 재생 실패:", e));
+            alarmIndexRef.current = 0;
+          }
+          window.setTimeout(() => { isCooldownRef.current = false; }, 2000);
+        }
+      }
+
+    } else {
+      setStatusText(`저신뢰(${bestScore.toFixed(2)})`);
+    }
+  }, [boxWidth, boxHeight, clickX, clickY, firstVolume, secondVolume, recognizeCooldownFast]);
+
+  const startCooldownDetection = useCallback(() => {
+    ensureTemplateBinCache();
+    clearCaptureInterval();
+    clearVideoFrameCallback();
+
+    const v = videoRef.current as any;
+    if (v?.requestVideoFrameCallback) {
+      const step = () => {
+        if (!isHuntingActive) return;
+        frameLoop();
+        rVFCHandleRef.current = v.requestVideoFrameCallback(step);
+      };
+      rVFCHandleRef.current = v.requestVideoFrameCallback(step);
+    } else {
+      captureIntervalRef.current = window.setInterval(frameLoop, 100);
+    }
+  }, [ensureTemplateBinCache, frameLoop, isHuntingActive]);
 
   const toggleHunting = useCallback(() => {
     if (isHuntingActive) {
@@ -248,43 +381,38 @@ export function useCooldown(initialResolution: Resolution = '1280x720') {
         return;
       }
       setIsHuntingActive(true);
-      setStatusText('작동 = false');
+      setStatusText('작동 시작');
       alarmIndexRef.current = 0;
+      historyRef.current = [];
       startCooldownDetection();
     }
   }, [cropConfirmed, isHuntingActive, startCooldownDetection, stopHunting]);
 
-  // -------- 템플릿 로드 --------
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const templates: NumberTemplates = {};
-      for (let i = 5; i <= 54; i++) {
+      const validNumbers = Array.from({ length: 49 }, (_, k) => k + 6); // 6..54
+      for (const i of validNumbers) {
         const img = new Image();
-        img.src = `/templates/${i}.png`;
+        img.src = `/assets/templates/${i}.png`;
         await new Promise<void>((resolve) => {
           img.onload = () => resolve();
           img.onerror = () => resolve();
         });
         templates[i] = img;
       }
-      if (!cancelled) numberTemplatesRef.current = templates;
+      if (!cancelled) {
+        numberTemplatesRef.current = templates;
+        ensureTemplateBinCache();
+      }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => { cancelled = true; };
+  }, [ensureTemplateBinCache]);
 
-  // -------- 오디오 객체 관리 --------
-  useEffect(() => {
-    firstAlarmRef.current = new Audio(firstAlarmSrc);
-  }, [firstAlarmSrc]);
+  useEffect(() => { firstAlarmRef.current = new Audio(firstAlarmSrc); }, [firstAlarmSrc]);
+  useEffect(() => { secondAlarmRef.current = new Audio(secondAlarmSrc); }, [secondAlarmSrc]);
 
-  useEffect(() => {
-    secondAlarmRef.current = new Audio(secondAlarmSrc);
-  }, [secondAlarmSrc]);
-
-  // -------- 유틸 (미리듣기) --------
   const previewFirstAlarm = useCallback(() => {
     const a = new Audio(firstAlarmSrc);
     a.volume = firstVolume;
@@ -297,23 +425,26 @@ export function useCooldown(initialResolution: Resolution = '1280x720') {
     a.play().catch(() => {});
   }, [secondAlarmSrc, secondVolume]);
 
-  // -------- 정리 --------
   useEffect(() => {
     return () => {
-      clearCaptureInterval();
       stopScreenShare();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [stopScreenShare]);
+
+  useEffect(() => {
+    if (isHuntingActive) {
+      startCooldownDetection();
+    } else {
+      clearCaptureInterval();
+      clearVideoFrameCallback();
+    }
+  }, [isHuntingActive, startCooldownDetection]);
 
   return {
-    // 연결용 refs
     videoWrapperRef,
     videoRef,
     cropAreaRef,
     canvasRef,
-
-    // 상태/문구
     resolution,
     setResolution,
     isScreenSharing,
@@ -321,9 +452,7 @@ export function useCooldown(initialResolution: Resolution = '1280x720') {
     cropConfirmed,
     isHuntingActive,
     statusText,
-    capturePreview, // 디버깅 미리보기 (선택적으로 UI에 표시)
-
-    // 알람 제어
+    capturePreview,
     firstAlarmSrc,
     setFirstAlarmSrc,
     secondAlarmSrc,
@@ -334,63 +463,10 @@ export function useCooldown(initialResolution: Resolution = '1280x720') {
     setSecondVolume,
     previewFirstAlarm,
     previewSecondAlarm,
-
-    // 액션
     toggleScreenShare,
     enterCropMode,
     onWrapperClick,
     confirmCrop,
     toggleHunting,
   };
-}
-
-// ===================== 내부 이미지 비교/인식 =====================
-
-function compareImages(img1: ImageData, img2: ImageData) {
-  if (img1.width !== img2.width || img1.height !== img2.height) return Number.MAX_SAFE_INTEGER;
-  let diff = 0;
-  const p1 = img1.data;
-  const p2 = img2.data;
-  for (let i = 0; i < p1.length; i += 4) {
-    const rd = p1[i] - p2[i];
-    const gd = p1[i + 1] - p2[i + 1];
-    const bd = p1[i + 2] - p2[i + 2];
-    diff += rd * rd + gd * gd + bd * bd;
-  }
-  return diff;
-}
-
-function recognizeCooldown(
-  ctx: CanvasRenderingContext2D,
-  canvas: HTMLCanvasElement,
-  templates: NumberTemplates
-): number {
-  const cropped = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-  // 임시 캔버스 1회 생성 후 재사용
-  const tmp = document.createElement('canvas');
-  tmp.width = canvas.width;
-  tmp.height = canvas.height;
-  const tctx = tmp.getContext('2d');
-  if (!tctx) return 5;
-
-  let bestNum = 5;
-  let minDiff = Infinity;
-
-  for (const k of Object.keys(templates)) {
-    const num = Number(k);
-    const template = templates[num];
-    if (!template) continue;
-
-    tctx.clearRect(0, 0, tmp.width, tmp.height);
-    tctx.drawImage(template, 0, 0, canvas.width, canvas.height);
-    const tdata = tctx.getImageData(0, 0, canvas.width, canvas.height);
-
-    const diff = compareImages(cropped, tdata);
-    if (diff < minDiff) {
-      minDiff = diff;
-      bestNum = num;
-    }
-  }
-  return bestNum;
 }

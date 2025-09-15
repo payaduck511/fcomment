@@ -1,11 +1,10 @@
-// /src/features/home/HomeClient.tsx
-
 'use client';
 
 import { useEffect } from 'react';
 import CharacterSearch from '@/features/character/CharacterSearch';
 import CommentList from '@/features/comments/CommentList';
 import styles from '@/app/page.module.css';
+import MapleChat from '@/features/maple-chat/MapleChat';
 
 export default function HomeClient() {
   // 우클릭 방지
@@ -34,6 +33,7 @@ export default function HomeClient() {
 
       {/* ---------- Comment Grid ---------- */}
       <section className={styles.grid}>
+        {/* 실시간 댓글 카드 */}
         <article className={styles.card}>
           <header className={styles.cardHeader}>
             <h2>실시간</h2>
@@ -44,6 +44,7 @@ export default function HomeClient() {
           </div>
         </article>
 
+        {/* 인기 댓글 카드 */}
         <article className={styles.card}>
           <header className={styles.cardHeader}>
             <h2>인기 댓글</h2>
@@ -52,6 +53,11 @@ export default function HomeClient() {
           <div className={styles.cardBody}>
             <CommentList mode="popular" />
           </div>
+        </article>
+        
+        {/* Q&A 챗봇을 그리드 안으로 이동 */}
+        <article className={`${styles.card} ${styles.chatCard}`}>
+          <MapleChat />
         </article>
       </section>
 

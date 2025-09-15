@@ -1,182 +1,244 @@
-/* src/app/cooldown/page.module.css */
-
-/* 루트 래퍼 */
+/* === 전역 및 레이아웃 === */
 .page {
-  font-family: Arial, sans-serif;
-  text-align: center;
-  margin: 0;
-  padding: 0;
-  background-color: #f4f4f4;
+  display: flex;
+  gap: 30px;
   min-height: 100vh;
+  padding: 30px;
+  margin: 0;
+  background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+  color: #E5E7EB;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  box-sizing: border-box;
 }
 
-/* 메인 컨테이너 */
-.app {
-  margin: 20px auto;
-  max-width: 90%;
-  margin-top: 60px;
-  padding: 20px;
+/* === 좌측 컨트롤 패널 === */
+.controlPanel {
+  flex: 0 0 400px;
+  background-color: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 30px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  align-self: flex-start;
+  position: sticky;
+  top: 30px;
 }
 
-/* 해상도 선택 */
-.labelResolution {
-  margin-right: 8px;
-  font-weight: bold;
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #374151;
 }
-
-.resolutionSelect {
-  padding: 4px 8px;
-  font-size: 14px;
-  margin-left: 4px;
+.panelHeader h1 {
+  font-size: 1.8em;
+  font-weight: 600;
+  margin: 0;
+  color: #F9FAFB;
 }
-
-/* 공통 버튼 */
-.btn {
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  margin: 5px;
-  border: none;
-  border-radius: 5px;
-  background-color: #007bff;
+.helpLink {
+  padding: 8px 15px;
+  background-color: #374151;
+  color: #D1D5DB;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.helpLink:hover {
+  background-color: #4B5563;
   color: #fff;
-  transition: background 0.3s ease-in-out;
 }
 
-.btn:hover {
-  background-color: #0056b3;
-}
-
-/* (1) 해상도/버튼/쿨타임 컨테이너 */
-.controlContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: #f8f9fa;
+.statusDisplay {
+  background-color: #111827;
+  border: 1px solid #374151;
+  border-radius: 8px;
   padding: 15px;
-  border-radius: 10px;
-  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  text-align: center;
+}
+.statusDisplay p {
+  margin: 0;
+  font-size: 1.2em;
+  font-weight: 500;
+  color: #93C5FD; /* 밝은 파란색으로 상태 강조 */
 }
 
-.buttonGroup {
+.controlSection {
+  border-bottom: 1px solid #374151;
+  padding-bottom: 25px;
+}
+.controlSection:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.controlSection h2 {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin: 0 0 15px 0;
+  color: #D1D5DB;
+}
+
+/* === 입력 요소 스타일 === */
+.inputGroup {
+  margin-bottom: 15px;
+}
+.inputGroup label {
+  display: block;
+  font-size: 0.9em;
+  color: #9CA3AF;
+  margin-bottom: 8px;
+}
+.inputGroup select {
+  width: 100%;
+  padding: 10px;
+  background-color: #374151;
+  color: #E5E7EB;
+  border: 1px solid #4B5563;
+  border-radius: 8px;
+  font-size: 1em;
+}
+.inputGroup select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selectWithButton {
+  display: flex;
+  gap: 10px;
+}
+.selectWithButton select {
+  flex-grow: 1;
+}
+.selectWithButton button {
+  flex-shrink: 0;
+  padding: 0 15px;
+  font-size: 1.2em;
+  background-color: #4B5563;
+  color: #fff;
+  border: 1px solid #6B7280;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.selectWithButton button:hover {
+  background-color: #6B7280;
+}
+
+/* 레인지 슬라이더 커스텀 */
+.inputGroup input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  background: #374151;
+  border-radius: 5px;
+  outline: none;
+  opacity: 0.7;
+  transition: opacity .2s;
+}
+.inputGroup input[type="range"]:hover {
+  opacity: 1;
+}
+.inputGroup input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #3B82F6;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.inputGroup input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #3B82F6;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+
+/* === 버튼 스타일 === */
+.btn {
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+  background-color: #4B5563;
+  color: #E5E7EB;
   margin-top: 10px;
 }
-
-.buttonGroup .btn {
-  margin: 5px;
-  padding: 10px 20px;
-  font-size: 14px;
+.btn:hover:not(:disabled) {
+  background-color: #6B7280;
+  color: #fff;
+}
+.btn:disabled {
+  background-color: #374151;
+  color: #6B7280;
+  cursor: not-allowed;
 }
 
-/* 쿨타임 표시 */
-.cooldownDisplay {
-  margin-top: 10px;
-  font-size: 18px;
-  font-weight: bold;
-  color: #d9534f;
+.buttonRow {
+  display: flex;
+  gap: 10px;
 }
 
-/* (2) 알람 선택 & 음량 조절 */
-.alarmContainer {
+/* 주요 액션 버튼 */
+.btnPrimary {
+  background-color: #3B82F6; /* 파란색 */
+  color: #fff;
+}
+.btnPrimary:hover:not(:disabled) {
+  background-color: #2563EB;
+}
+.btnPrimary:disabled {
+  background-color: #374151;
+}
+
+/* === 우측 디스플레이 영역 === */
+.displayArea {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 20px;
   align-items: center;
-  background-color: #fff3cd;
-  padding: 15px;
-  border-radius: 10px;
-  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-}
-
-.alarmRow {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
   justify-content: center;
 }
 
-.btnPreview {
-  padding: 5px 10px;
-  font-size: 14px;
-  cursor: pointer;
-  border: none;
-  border-radius: 5px;
-  background-color: #28a745;
-  color: #fff;
-  transition: background 0.3s ease-in-out;
-}
-
-.btnPreview:hover {
-  background-color: #1f8a37;
-}
-
-.volumeControl {
-  margin-top: 10px;
-  text-align: left;
-}
-
-.volumeControl label {
-  display: block;
-  margin-bottom: 5px;
-}
-
-.range {
-  width: 150px;
-}
-
-/* (3) 비디오 영역 */
 .videoWrapper {
-  position: relative;
-  border: 2px solid #000;
-  margin: 0 auto;
+  width: 100%;
+  border: 2px solid #374151;
+  border-radius: 12px;
   overflow: hidden;
-
-  /* 기본값 (훅에서 해상도 변경 시 덮어씀) */
-  width: 1280px;
-  height: 720px;
+  position: relative;
+  background-color: #111827;
+  aspect-ratio: 16 / 9; /* 비디오 비율 유지 */
 }
-
-/* 공유된 화면(video) */
 .sharedScreen {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
-
-/* 자를 영역 표시 */
 .cropArea {
   position: absolute;
-  border: 2px dashed red;
-  background-color: rgba(255, 0, 0, 0.2);
+  border: 2px dashed #EF4444; /* 붉은색 점선 */
+  background-color: rgba(239, 68, 68, 0.2);
   display: none;
   pointer-events: none;
 }
 
-/* 결과 캔버스*/
 .captureCanvas {
-  margin-top: 20px;
-  border: 2px solid green;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  max-width: 80%;
-  max-height: 400px;
-}
-
-/* 도움말 링크 버튼 */
-.helpButton {
-  font-size: 16px;
-  margin-left: 10px;
-  padding: 5px 10px;
-  background-color: #007bff;
-  color: #fff;
-  text-decoration: none;
-  border-radius: 5px;
-  display: inline-block;
-}
-
-.helpButton:hover {
-  background-color: #0056b3;
+  border: 2px solid #4ADE80; /* 초록색 */
+  border-radius: 8px;
+  max-width: 50%;
+  background-color: #111827;
 }

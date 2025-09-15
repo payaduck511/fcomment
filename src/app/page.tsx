@@ -20,6 +20,12 @@ export const metadata: Metadata = {
     '메이플 큐브',
     '메이플 큐브 시뮬',
     '메이플스토리 큐브 시뮬',
+    '메이플 ai',
+    '메이플 챗봇',
+    '메이플스토리 ai',
+    '메이플스토리 챗봇',
+    '메이플 인공지능',
+    '메이플스토리 인공지능'
   ],
   authors: [{ name: 'comment.pe.kr' }],
   openGraph: {
