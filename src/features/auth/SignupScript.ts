@@ -25,7 +25,12 @@ export default function SignupScript() {
     // ===== 유틸 =====
     const $ = (id: string) =>
       document.getElementById(id) as HTMLInputElement | HTMLDivElement | null;
-    const API = (path: string) => path;
+
+    // ✅ BASE URL 지원: .env에 NEXT_PUBLIC_API_BASE_URL 넣으면 그걸 사용
+    // 예) NEXT_PUBLIC_API_BASE_URL="http://localhost:4000"
+    const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/+$/, '');
+    const API = (path: string) => `${API_BASE}${path}`;
+
     const validateUsername = (v: unknown) =>
       typeof v === 'string' && v.trim().length >= 4;
     const validateNickname = (v: unknown) =>
@@ -33,6 +38,18 @@ export default function SignupScript() {
     const validatePassword = (v: unknown) =>
       typeof v === 'string' && v.trim().length >= 6;
     const validateEmail = (v: unknown) => /\S+@\S+\.\S+/.test(((v as string) || '').trim());
+
+    // ✅ fetch 타임아웃 유틸 (디폴트 15초)
+    async function fetchWithTimeout(input: RequestInfo, init?: RequestInit, timeoutMs = 15000) {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(input, { ...init, signal: controller.signal });
+        return res;
+      } finally {
+        clearTimeout(t);
+      }
+    }
 
     // 초기엔 회원가입 버튼 비활성화
     const registerBtnInit = $('registerButton') as HTMLButtonElement | null;
@@ -47,22 +64,23 @@ export default function SignupScript() {
         const username = (($('registerUsername') as HTMLInputElement)?.value || '').trim();
         if (!validateUsername(username)) {
           alert('아이디는 최소 4자 이상 입력해주세요.');
-          // 실패 콜백
           (window as any).onUsernameChecked?.(false);
           return;
         }
-        const res = await fetch(API('/api/check-username'), {
+        const res = await fetchWithTimeout(API('/api/check-username'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username }),
         });
-        const data = await res.json().catch(() => ({} as any));
+        const text = await res.text();
+        let data: any = {};
+        try { data = JSON.parse(text); } catch {}
         if (res.ok) {
           alert(data?.message || '사용 가능한 아이디입니다.');
-          // 성공 콜백
           (window as any).onUsernameChecked?.(true);
         } else {
-          alert(data?.message || '이미 사용 중인 아이디입니다.');
+          console.warn('check-username failed', res.status, text);
+          alert(data?.message || `이미 사용 중인 아이디입니다. [${res.status}]`);
           (window as any).onUsernameChecked?.(false);
         }
       } catch (err) {
@@ -86,17 +104,20 @@ export default function SignupScript() {
           (window as any).onNicknameChecked?.(false);
           return;
         }
-        const res = await fetch(API('/api/check-nickname'), {
+        const res = await fetchWithTimeout(API('/api/check-nickname'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ nickname }),
         });
-        const data = await res.json().catch(() => ({} as any));
+        const text = await res.text();
+        let data: any = {};
+        try { data = JSON.parse(text); } catch {}
         if (res.ok) {
           alert(data?.message || '사용 가능한 닉네임입니다.');
           (window as any).onNicknameChecked?.(true);
         } else {
-          alert(data?.message || '이미 사용 중인 닉네임입니다.');
+          console.warn('check-nickname failed', res.status, text);
+          alert(data?.message || `이미 사용 중인 닉네임입니다. [${res.status}]`);
           (window as any).onNicknameChecked?.(false);
         }
       } catch (err) {
@@ -129,21 +150,24 @@ export default function SignupScript() {
           btn.textContent = '코드 전송 중...';
         }
 
-        const res = await fetch(API('/api/send-verification-code'), {
+        const res = await fetchWithTimeout(API('/api/send-verification-code'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
-        });
-        const data = await res.json().catch(() => ({} as any));
+        }, 15000); // 15초 타임아웃
+
+        const text = await res.text();
+        let data: any = {};
+        try { data = JSON.parse(text); } catch {}
 
         if (res.ok) {
           const sec = $('emailVerificationSection');
           if (sec) (sec as HTMLDivElement).style.display = 'block';
           alert(data?.message || '이메일로 인증코드를 전송했습니다.');
-          // 전송 성공 알림 콜백 (UI에서 "코드 전송됨" 표시용)
           (window as any).onEmailCodeSent?.();
         } else {
-          alert(data?.error || data?.message || '인증 코드 전송에 실패했습니다.');
+          console.warn('send-verification-code failed', res.status, text);
+          alert(data?.error || data?.message || `인증 코드 전송에 실패했습니다. [${res.status}]`);
         }
 
         // 60초 쿨타임
@@ -155,9 +179,13 @@ export default function SignupScript() {
           }
           cooldownTimerId = null;
         }, 60000);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error sending verification code:', err);
-        alert('인증 코드 전송 중 오류가 발생했습니다.');
+        if (err?.name === 'AbortError') {
+          alert('서버 응답이 지연되어 요청이 취소되었습니다. (타임아웃)');
+        } else {
+          alert('인증 코드 전송 중 오류가 발생했습니다.');
+        }
         isSendBtnCooling = false; // 실패 시 즉시 재시도 가능
         const btn = $('sendCodeButton') as HTMLButtonElement | null;
         if (btn) {
@@ -191,13 +219,15 @@ export default function SignupScript() {
           return;
         }
 
-        // 백엔드의 검증 엔드포인트 사용
-        const res = await fetch(API('/api/verify-reset-code'), {
+        // ❗ 현재 라우트 이름이 "verify-reset-code" 인데, 회원가입용 검증이면 백엔드와 통일 필요
+        const res = await fetchWithTimeout(API('/api/verify-reset-code'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, resetCode: inputCode }),
-        });
-        const data = await res.json().catch(() => ({} as any));
+        }, 15000);
+        const text = await res.text();
+        let data: any = {};
+        try { data = JSON.parse(text); } catch {}
 
         if (res.ok) {
           emailVerified = true;
@@ -207,21 +237,25 @@ export default function SignupScript() {
           }
           const registerBtn = $('registerButton') as HTMLButtonElement | null;
           if (registerBtn) registerBtn.disabled = false;
-          // 성공 콜백
           (window as any).onEmailVerified?.(true);
         } else {
+          console.warn('verify-code failed', res.status, text);
           emailVerified = false;
           if (resultEl) {
-            resultEl.textContent = `❌ 인증에 실패하였습니다: ${data?.error || data?.message || ''}`;
+            resultEl.textContent = `❌ 인증에 실패하였습니다: ${data?.error || data?.message || `[${res.status}]`}`;
             (resultEl as HTMLDivElement).style.color = 'red';
           }
           const registerBtn = $('registerButton') as HTMLButtonElement | null;
           if (registerBtn) registerBtn.disabled = true;
           (window as any).onEmailVerified?.(false);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error verifying code:', err);
-        alert('인증 확인 중 오류가 발생했습니다.');
+        if (err?.name === 'AbortError') {
+          alert('서버 응답이 지연되어 요청이 취소되었습니다. (타임아웃)');
+        } else {
+          alert('인증 확인 중 오류가 발생했습니다.');
+        }
         (window as any).onEmailVerified?.(false);
       } finally {
         verifyingCode = false;
@@ -267,22 +301,29 @@ export default function SignupScript() {
           return;
         }
 
-        const res = await fetch(API('/api/register'), {
+        const res = await fetchWithTimeout(API('/api/register'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password, nickname, email }),
-        });
-        const data = await res.json().catch(() => ({} as any));
+        }, 15000);
+        const text = await res.text();
+        let data: any = {};
+        try { data = JSON.parse(text); } catch {}
 
         if (res.ok) {
           alert('회원가입이 완료되었습니다!');
           window.location.href = '/';
         } else {
-          alert(data?.error || data?.message || '회원가입에 실패했습니다.');
+          console.warn('register failed', res.status, text);
+          alert(data?.error || data?.message || `회원가입에 실패했습니다. [${res.status}]`);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error registering user:', err);
-        alert('회원가입 중 오류가 발생했습니다.');
+        if (err?.name === 'AbortError') {
+          alert('서버 응답이 지연되어 요청이 취소되었습니다. (타임아웃)');
+        } else {
+          alert('회원가입 중 오류가 발생했습니다.');
+        }
       } finally {
         registering = false;
       }
