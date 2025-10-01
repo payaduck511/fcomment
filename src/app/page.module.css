@@ -1,8 +1,7 @@
 /* ===================================
- 페이지 전역 스타일
+ Page Layout
  =================================== */
 .page {
-  /* 푸터 고정을 위한 스타일 */
   background: #1e2025;
   color: #e2e4e8;
   display: flex;
@@ -15,7 +14,7 @@
 }
 
 /* ===================================
- Hero 섹션
+ Hero Section
  =================================== */
 .hero {
   position: relative;
@@ -97,92 +96,43 @@
   color: #e2e4e8;
   width: 100%;
 }
+
 .searchWrap :where(input[type="text"], input, .input)::placeholder {
   color: #8a929e;
 }
 
 /* ===================================
- Grid & Cards
+ Interactive Section
  =================================== */
-.grid {
+.mainContent {
   width: 100%;
   max-width: 1500px;
   margin: 0 auto;
   padding: 0 clamp(16px, 3vw, 24px) 48px;
   display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 24px;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  align-items: stretch;
 }
 
-.card {
+.gamePanel,
+.chatPanel {
   background: #242830;
   border-radius: 16px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
+  border: 1px solid #353941;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  min-height: 280px;
-  border: 1px solid #353941;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+  min-height: 520px;
 }
 
-.chatCard {
-  padding: 0;
+.gamePanel {
+  gap: 16px;
 }
 
-.cardHeader {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 20px 24px 12px;
-  border-bottom: 1px solid #353941;
-}
-.cardHeader h2 {
-  margin: 0;
-  font-size: 22px;
-  color: #fff;
-  font-weight: 700;
-}
-.cardHint {
-  color: #8a929e;
-  font-size: 14px;
-}
-
-.cardBody {
-  padding: 16px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  flex: 1;
-}
-
-.cardBody :global(.comment-item) {
-  background: #1e2025;
-  border: 1px solid #353941;
-  border-radius: 12px;
-  padding: 12px 14px;
-  line-height: 1.5;
-}
-.cardBody :global(.comment-item) p {
-  margin: 4px 0;
-}
-
-.cardBody :global(.comment-author) {
-  font-size: 15px;
-  color: #f5c538;
-  font-weight: 600;
-}
-.cardBody :global(.comment-author) strong {
-  color: #fff;
-}
-
-.cardBody :global(.comment-meta) {
-  color: #787f8a;
-  font-size: 13px;
+.chatPanel {
+  gap: 0;
 }
 
 /* ===================================
@@ -197,10 +147,12 @@
   margin-top: 24px;
   border-top: 1px solid #353941;
 }
+
 .footer a {
   color: #316fea;
   text-decoration: none;
 }
+
 .footer a:hover {
   text-decoration: underline;
 }
@@ -208,13 +160,36 @@
 /* ===================================
  Responsive
  =================================== */
+@media (max-width: 1024px) {
+  .mainContent {
+    grid-template-columns: 1fr;
+  }
+
+  .gamePanel,
+  .chatPanel {
+    min-height: 420px;
+  }
+}
+
 @media (max-width: 720px) {
   .heroControls {
     flex-direction: column;
     justify-content: stretch;
   }
+
   .searchWrap {
     width: 100%;
     max-width: none;
+  }
+
+  .mainContent {
+    padding: 0 16px 32px;
+    gap: 16px;
+  }
+
+  .gamePanel,
+  .chatPanel {
+    padding: 20px;
+    min-height: 360px;
   }
 }

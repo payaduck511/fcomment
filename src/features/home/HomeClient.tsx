@@ -2,14 +2,14 @@
 
 import { useEffect } from 'react';
 import CharacterSearch from '@/features/character/CharacterSearch';
-import CommentList from '@/features/comments/CommentList';
 import styles from '@/app/page.module.css';
+import MiniGame from '@/features/minigame/MiniGame';
 import MapleChat from '@/features/maple-chat/MapleChat';
 
 export default function HomeClient() {
-  // 우클릭 방지
+  // Disable browser context menu on the home page
   useEffect(() => {
-    const blockContextMenu = (e: MouseEvent) => e.preventDefault();
+    const blockContextMenu = (event: MouseEvent) => event.preventDefault();
     document.addEventListener('contextmenu', blockContextMenu);
     return () => document.removeEventListener('contextmenu', blockContextMenu);
   }, []);
@@ -21,7 +21,7 @@ export default function HomeClient() {
         <div className={styles.heroInner}>
           <h1 className={styles.title}>MapleStory Comment</h1>
           <p className={styles.subtitle}>
-            직업 채팅 · 시뮬레이터 · 실시간 댓글
+            Job chat - simulators - interactive mini game
           </p>
           <div className={styles.heroControls}>
             <div className={styles.searchWrap}>
@@ -31,42 +31,22 @@ export default function HomeClient() {
         </div>
       </section>
 
-      {/* ---------- Comment Grid ---------- */}
-      <section className={styles.grid}>
-        {/* 실시간 댓글 카드 */}
-        <article className={styles.card}>
-          <header className={styles.cardHeader}>
-            <h2>실시간</h2>
-            <span className={styles.cardHint}>최신 댓글</span>
-          </header>
-          <div className={styles.cardBody}>
-            <CommentList mode="recent" />
-          </div>
-        </article>
-
-        {/* 인기 댓글 카드 */}
-        <article className={styles.card}>
-          <header className={styles.cardHeader}>
-            <h2>인기 댓글</h2>
-            <span className={styles.cardHint}>좋아요 순</span>
-          </header>
-          <div className={styles.cardBody}>
-            <CommentList mode="popular" />
-          </div>
-        </article>
-        
-        {/* Q&A 챗봇을 그리드 안으로 이동 */}
-        <article className={`${styles.card} ${styles.chatCard}`}>
+      {/* ---------- Main Interactive Section ---------- */}
+      <section className={styles.mainContent}>
+        <div className={styles.gamePanel}>
+          <MiniGame />
+        </div>
+        <div className={styles.chatPanel}>
           <MapleChat />
-        </article>
+        </div>
       </section>
 
       {/* ---------- Footer ---------- */}
       <footer className={styles.footer}>
         <p>
-          discord:{' '}
+          discord{' '}
           <a href="https://discord.gg/RBKEB8d9" target="_blank" rel="noreferrer">
-            클릭
+            Join
           </a>
         </p>
         <p>e-mail : payaduck@naver.com</p>
