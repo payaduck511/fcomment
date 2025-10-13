@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   },
   description: '메이플스토리 큐브, 애플, 반지 시뮬레이터와 캐릭터 정보 조회, 직업 추천 등 다양한 기능을 제공합니다.',
   authors: [{ name: 'comment.pe.kr' }],
+  other: {
+    'google-adsense-account': 'ca-pub-9323846523582867',
+  },
   openGraph: {
     title: '메이플 코멘트',
     description: '메이플스토리 유저들을 위한 정보 및 시뮬레이터 사이트',
@@ -36,6 +39,12 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={inter.className}>
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9323846523582867"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         {children}
         <Script async src="https://www.googletagmanager.com/gtag/js?id=G-2B1NC2DVXQ" />
         <Script id="google-analytics">

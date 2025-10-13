@@ -7,7 +7,6 @@ import MiniGame from '@/features/minigame/MiniGame';
 import MapleChat from '@/features/maple-chat/MapleChat';
 
 export default function HomeClient() {
-  // Disable browser context menu on the home page
   useEffect(() => {
     const blockContextMenu = (event: MouseEvent) => event.preventDefault();
     document.addEventListener('contextmenu', blockContextMenu);
@@ -21,7 +20,7 @@ export default function HomeClient() {
         <div className={styles.heroInner}>
           <h1 className={styles.title}>MapleStory Comment</h1>
           <p className={styles.subtitle}>
-            Job chat - simulators - interactive mini game
+            시뮬레이터 , 미니게임
           </p>
           <div className={styles.heroControls}>
             <div className={styles.searchWrap}>
