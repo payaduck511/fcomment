@@ -409,13 +409,63 @@ function getPointAlongPath(metrics: PathMetrics, progress: number): Point {
   return { x: metrics.points[0].x, y: metrics.points[0].y };
 }
 
+type UnitAssets = {
+  luminousVideo: HTMLVideoElement | null;
+};
+
 function drawUnitAt(
   ctx: CanvasRenderingContext2D,
   unit: GameUnit,
   centerX: number,
   centerY: number,
   radius: number,
+  assets?: UnitAssets,
 ) {
+  // If luminous and a video asset is available, draw the video instead of a circle.
+  if (
+    unit.type === 'luminous' &&
+    assets?.luminousVideo &&
+    assets.luminousVideo.readyState >= 2 &&
+    assets.luminousVideo.videoWidth > 0 &&
+    assets.luminousVideo.videoHeight > 0
+  ) {
+    const video = assets.luminousVideo;
+    const aspect = video.videoWidth / video.videoHeight;
+    // Fit within the unit circle bounds, leaving slight padding
+    const maxSize = radius * 2 * 0.95;
+    let drawW = maxSize;
+    let drawH = maxSize;
+    if (aspect >= 1) {
+      drawH = maxSize / aspect;
+    } else {
+      drawW = maxSize * aspect;
+    }
+
+    // Outline to indicate rarity and unit boundary
+    ctx.beginPath();
+    ctx.strokeStyle = RARITY_OUTLINE[unit.rarity];
+    ctx.lineWidth = 3;
+    ctx.arc(centerX, centerY, radius + 3, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Draw a subtle background for contrast
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw the video centered
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(video, centerX - drawW / 2, centerY - drawH / 2, drawW, drawH);
+    ctx.restore();
+
+    return;
+  }
+
+  // Default drawing: colored circle with label
   ctx.beginPath();
   ctx.fillStyle = UNIT_COLORS[unit.type];
   ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -439,6 +489,7 @@ function drawUnits(
   geometry: BoardGeometry,
   units: GameUnit[],
   dragging: DragState | null,
+  assets?: UnitAssets,
 ) {
   const unitRadius = geometry.cellSize * 0.28;
 
@@ -450,7 +501,7 @@ function drawUnits(
     const col = unit.slot % 3;
     const centerX = geometry.boardX + col * geometry.cellSize + geometry.cellSize / 2;
     const centerY = geometry.boardY + row * geometry.cellSize + geometry.cellSize / 2;
-    drawUnitAt(ctx, unit, centerX, centerY, unitRadius);
+    drawUnitAt(ctx, unit, centerX, centerY, unitRadius, assets);
   });
 }
 
@@ -553,6 +604,32 @@ export default function MiniGameCanvas() {
 
   const attackTimersRef = useRef<AttackTimers>({});
 
+  // Luminous video asset (attack motion). Place file at: frontend/public/gameimg/lumiattack.mp4
+  const luminousVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [luminousReady, setLuminousReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (!luminousVideoRef.current) {
+      const video = document.createElement('video');
+      // Note: file located under public/assets/images/gameimg/lumiattak.mp4
+      // If you rename/move it, update this path accordingly.
+      video.src = '/assets/images/gameimg/lumiattak.mp4';
+      video.muted = true; // allow autoplay on most browsers
+      video.loop = true;
+      video.playsInline = true;
+      video.preload = 'auto';
+      const onCanPlay = () => {
+        setLuminousReady(true);
+        // Try to play; ignore failures due to policies
+        video.play().catch(() => {});
+      };
+      video.addEventListener('canplay', onCanPlay, { once: true });
+      luminousVideoRef.current = video;
+    }
+    return () => undefined;
+  }, []);
+
   useEffect(() => {
     const timers = attackTimersRef.current;
     const activeIds = new Set(state.units.map((unit) => unit.id));
@@ -622,14 +699,16 @@ export default function MiniGameCanvas() {
       const metrics = computePathMetrics(geometry.pathPoints);
 
       const dragging = draggingRef.current;
-      drawUnits(ctx, geometry, unitsRef.current, dragging);
+      const assets = { luminousVideo: luminousReady ? luminousVideoRef.current : null };
+      drawUnits(ctx, geometry, unitsRef.current, dragging, assets);
       drawMonsters(ctx, metrics, monstersRef.current, Math.max(9, geometry.trackWidth * 0.35));
 
       if (dragging) {
         const unitRadius = geometry.cellSize * 0.28;
         const centerX = dragging.pointerX - dragging.grabOffsetX;
         const centerY = dragging.pointerY - dragging.grabOffsetY;
-        drawUnitAt(ctx, dragging.unit, centerX, centerY, unitRadius);
+        const assets = { luminousVideo: luminousReady ? luminousVideoRef.current : null };
+        drawUnitAt(ctx, dragging.unit, centerX, centerY, unitRadius, assets);
       }
     };
 
