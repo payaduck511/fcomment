@@ -1143,8 +1143,8 @@ export default function MiniGameCanvas() {
           setContextMenu(null);
           return;
         }
-        setSelectedSlot(slot);
-        selectedSlotRef.current = slot;
+        setSelectedSlot(slot ?? null);
+        selectedSlotRef.current = slot ?? null;
         const rangeMultiplier = UNIT_ATTACK_RANGE_MULTIPLIER[unit.type] ?? 0;
         const range = rangeMultiplier * geometry.cellSize;
         const stats = getUnitStats(unit, skillsRef.current);
