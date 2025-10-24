@@ -17,10 +17,12 @@ export type GameUnit = {
   level: number;
 };
 
-export type SkillCard =
-  | { id: string; kind: 'unit-attack-up'; unitType: GameUnit['type']; amount: number }
-  | { id: string; kind: 'unit-level'; unitType: GameUnit['type']; amount: number }
-  | { id: string; kind: 'global-attack-up'; amount: number };
+export type SkillCard = {
+  id: string;
+  kind: 'unit-level';
+  unitType: GameUnit['type'];
+  amount: number;
+};
 
 export type SkillDraft = {
   options: SkillCard[];

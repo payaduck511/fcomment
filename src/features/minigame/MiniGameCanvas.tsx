@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGameDispatch, useGameState } from './state/gameState';
 import type { GameUnit, SkillCard } from './state/gameState';
 
@@ -48,6 +48,12 @@ type ContextMenuState = {
   unit: GameUnit;
   x: number;
   y: number;
+  range: number;
+  stats: {
+    damage: number;
+    cooldown: number;
+    hitsPerAttack: number;
+  };
 };
 
 const SPAWN_INTERVAL = 2.5;
@@ -86,12 +92,21 @@ const SELL_VALUE: Record<GameUnit['rarity'], number> = {
 };
 
 const UNIT_ATTACK_PROFILE: Record<GameUnit['type'], { baseDamage: number; cooldown: number }> = {
-  luminous: { baseDamage: 16, cooldown: 0.9 },
-  bowmaster: { baseDamage: 12, cooldown: 0.65 },
-  'angelic-buster': { baseDamage: 15, cooldown: 0.8 },
-  bishop: { baseDamage: 9, cooldown: 1.1 },
-  blaster: { baseDamage: 18, cooldown: 1 },
-  'night-lord': { baseDamage: 14, cooldown: 0.75 },
+  luminous: { baseDamage: 16, cooldown: 1 },
+  bowmaster: { baseDamage: 30, cooldown: 2 },
+  'angelic-buster': { baseDamage: 20, cooldown: 0.9 },
+  bishop: { baseDamage: 9, cooldown: 1 },
+  blaster: { baseDamage: 60, cooldown: 3 },
+  'night-lord': { baseDamage: 5, cooldown: 0.3 },
+};
+
+const UNIT_ATTACK_RANGE_MULTIPLIER: Record<GameUnit['type'], number> = {
+  luminous: 1.2,
+  bowmaster: 2,
+  'angelic-buster': 0.85,
+  bishop: 1.2,
+  blaster: 0.85,
+  'night-lord': 0.85,
 };
 
 const RARITY_DAMAGE_MULTIPLIER: Record<GameUnit['rarity'], number> = {
@@ -114,7 +129,18 @@ const MESO_PER_HEALTH = 1 / 90;
 const MIN_SCORE_REWARD = 20;
 const MIN_MESO_REWARD = 1;
 
+const LUMINOUS_TARGETS_BY_LEVEL = [2, 3, 4, 5];
+
 type AttackTimers = Record<string, number>;
+
+const UNIT_BASE_PATH_WINDOW: Record<GameUnit['type'], number> = {
+  luminous: 0.06,
+  bowmaster: 0.07,
+  'angelic-buster': 0.065,
+  bishop: 0.055,
+  blaster: 0.05,
+  'night-lord': 0.06,
+};
 
 function getEffectiveUnitLevel(unit: GameUnit, skills: SkillCard[]): number {
   let level = unit.level;
@@ -126,17 +152,27 @@ function getEffectiveUnitLevel(unit: GameUnit, skills: SkillCard[]): number {
   return Math.max(1, level);
 }
 
-function getAttackMultiplier(unit: GameUnit, skills: SkillCard[]): number {
-  let globalBonus = 0;
-  let unitBonus = 0;
-  skills.forEach((card) => {
-    if (card.kind === 'global-attack-up') {
-      globalBonus += card.amount;
-    } else if (card.kind === 'unit-attack-up' && card.unitType === unit.type) {
-      unitBonus += card.amount;
-    }
-  });
-  return RARITY_DAMAGE_MULTIPLIER[unit.rarity] * (1 + globalBonus + unitBonus);
+function getLuminousMaxTargets(unit: GameUnit, skills: SkillCard[]): number {
+  const effectiveLevel = Math.min(
+    LUMINOUS_TARGETS_BY_LEVEL.length,
+    Math.max(1, getEffectiveUnitLevel(unit, skills)),
+  );
+  return LUMINOUS_TARGETS_BY_LEVEL[effectiveLevel - 1] ?? LUMINOUS_TARGETS_BY_LEVEL[0];
+}
+
+function getUnitPathWindow(unit: GameUnit, skills: SkillCard[]): number {
+  const base = UNIT_BASE_PATH_WINDOW[unit.type] ?? 0.04;
+  if (unit.type === 'luminous') {
+    const maxLevel = LUMINOUS_TARGETS_BY_LEVEL.length;
+    const effectiveLevel = Math.max(1, Math.min(getEffectiveUnitLevel(unit, skills), maxLevel));
+    const extra = Math.max(0, effectiveLevel - 1) * 0.01;
+    return Math.min(0.12, base + extra);
+  }
+  return base;
+}
+
+function getAttackMultiplier(unit: GameUnit, _skills: SkillCard[]): number {
+  return RARITY_DAMAGE_MULTIPLIER[unit.rarity];
 }
 
 function getUnitDamage(unit: GameUnit, skills: SkillCard[]): number {
@@ -154,19 +190,11 @@ function getAttackCooldown(unit: GameUnit, skills: SkillCard[]): number {
   return Math.max(MIN_ATTACK_COOLDOWN, profile.cooldown * (1 - reduction) * rarityModifier);
 }
 
-function pickTarget(monsters: Monster[], defeated: Set<number>): Monster | undefined {
-  let target: Monster | undefined;
-  let bestProgress = -Infinity;
-  monsters.forEach((monster) => {
-    if (defeated.has(monster.id) || monster.health <= 0) {
-      return;
-    }
-    if (monster.progress > bestProgress) {
-      bestProgress = monster.progress;
-      target = monster;
-    }
-  });
-  return target;
+function getUnitStats(unit: GameUnit, skills: SkillCard[]) {
+  const damage = getUnitDamage(unit, skills);
+  const cooldown = getAttackCooldown(unit, skills);
+  const hitsPerAttack = unit.type === 'luminous' ? getLuminousMaxTargets(unit, skills) : 1;
+  return { damage, cooldown, hitsPerAttack };
 }
 
 function resolveUnitAttacks(
@@ -175,11 +203,15 @@ function resolveUnitAttacks(
   monsters: Monster[],
   timers: AttackTimers,
   skills: SkillCard[],
+  geometry: BoardGeometry,
+  metrics: PathMetrics,
 ): Set<number> {
   const defeated = new Set<number>();
   if (monsters.length === 0 || units.length === 0) {
     return defeated;
   }
+
+  const monsterPositions = monsters.map((monster) => getPointAlongPath(metrics, monster.progress));
 
   units.forEach((unit) => {
     const cooldown = getAttackCooldown(unit, skills);
@@ -188,21 +220,87 @@ function resolveUnitAttacks(
       return;
     }
 
+    const unitCenter = getSlotCenter(geometry, unit.slot);
+    const rangeMultiplier = UNIT_ATTACK_RANGE_MULTIPLIER[unit.type] ?? 0;
+    const range = rangeMultiplier * geometry.cellSize;
+    const rangeSq = range * range;
+    const closestProgress = getClosestProgressToPoint(metrics, unitCenter);
+    const pathWindow = getUnitPathWindow(unit, skills);
+
     let remaining = timers[unit.id] ?? 0;
     remaining -= delta;
 
     while (remaining <= 0) {
-      const target = pickTarget(monsters, defeated);
-      if (!target) {
-        remaining = 0;
+      const eligible = monsters
+        .map((monster, index) => {
+          if (defeated.has(monster.id) || monster.health <= 0) return null;
+          const position = monsterPositions[index];
+          const dx = position.x - unitCenter.x;
+          const dy = position.y - unitCenter.y;
+          const distanceSq = dx * dx + dy * dy;
+          if (distanceSq > rangeSq) return null;
+          const progressDistance = getProgressDistance(monster.progress, closestProgress);
+          if (progressDistance > pathWindow) return null;
+          return { monster, distanceSq, progress: monster.progress };
+        })
+        .filter((entry): entry is { monster: Monster; distanceSq: number; progress: number } => entry !== null)
+        .sort((a, b) => {
+          if (a.distanceSq !== b.distanceSq) {
+            return a.distanceSq - b.distanceSq;
+          }
+          return b.progress - a.progress;
+        });
+
+      if (eligible.length === 0) {
+        remaining = cooldown;
         break;
       }
 
       const damage = getUnitDamage(unit, skills);
-      target.health -= damage;
-      if (target.health <= 0 && !defeated.has(target.id)) {
-        target.health = 0;
-        defeated.add(target.id);
+      if (unit.type === 'luminous') {
+        const maxTargets = getLuminousMaxTargets(unit, skills);
+        const primary = eligible[0];
+        if (!primary) {
+          remaining = cooldown;
+          break;
+        }
+
+        const targets: Monster[] = [primary.monster];
+
+        if (maxTargets > 1) {
+          const extraTargetsNeeded = maxTargets - 1;
+          const additional = monsters
+            .filter(
+              (monster) =>
+                monster.id !== primary.monster.id &&
+                !defeated.has(monster.id) &&
+                monster.health > 0,
+            )
+            .map((monster) => ({
+              monster,
+              distance: Math.abs(monster.progress - primary.progress),
+            }))
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, extraTargetsNeeded)
+            .map((entry) => entry.monster);
+
+          targets.push(...additional);
+        }
+
+        targets.forEach((monster) => {
+          monster.health -= damage;
+          if (monster.health <= 0 && !defeated.has(monster.id)) {
+            monster.health = 0;
+            defeated.add(monster.id);
+          }
+        });
+      } else {
+        const { monster } = eligible[0];
+        monster.health -= damage;
+        if (monster.health <= 0 && !defeated.has(monster.id)) {
+          monster.health = 0;
+          defeated.add(monster.id);
+        }
       }
 
       remaining += cooldown;
@@ -340,17 +438,10 @@ function drawBoard(
 
   ctx.fillStyle = 'rgba(220, 190, 255, 0.85)';
   const nodeRadius = Math.max(8, trackWidth * 0.35);
-  nodePositions.forEach(({ x, y }) => {
-    ctx.beginPath();
-    ctx.arc(x, y, nodeRadius, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  cornerNodes.forEach(({ x, y }) => {
-    ctx.beginPath();
-    ctx.arc(x, y, nodeRadius * 0.9, 0, Math.PI * 2);
-    ctx.fill();
-  });
+  const spawnPoint = pathPoints[0];
+  ctx.beginPath();
+  ctx.arc(spawnPoint.x, spawnPoint.y, nodeRadius, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
   ctx.lineWidth = 2;
@@ -409,8 +500,58 @@ function getPointAlongPath(metrics: PathMetrics, progress: number): Point {
   return { x: metrics.points[0].x, y: metrics.points[0].y };
 }
 
+function getSlotCenter(geometry: BoardGeometry, slot: number): Point {
+  const col = slot % 3;
+  const row = Math.floor(slot / 3);
+  return {
+    x: geometry.boardX + col * geometry.cellSize + geometry.cellSize / 2,
+    y: geometry.boardY + row * geometry.cellSize + geometry.cellSize / 2,
+  };
+}
+
+function getClosestProgressToPoint(metrics: PathMetrics, point: Point): number {
+  if (metrics.totalLength === 0) return 0;
+  let bestDistSq = Infinity;
+  let bestProgress = 0;
+  let accumulated = 0;
+  for (let i = 0; i < metrics.lengths.length; i += 1) {
+    const start = metrics.points[i];
+    const end = metrics.points[i + 1];
+    const segmentLength = metrics.lengths[i];
+    const vx = end.x - start.x;
+    const vy = end.y - start.y;
+    const segLenSq = vx * vx + vy * vy;
+    if (segLenSq === 0) {
+      accumulated += segmentLength;
+      continue;
+    }
+    const wx = point.x - start.x;
+    const wy = point.y - start.y;
+    const t = Math.max(0, Math.min(1, (vx * wx + vy * wy) / segLenSq));
+    const closestX = start.x + vx * t;
+    const closestY = start.y + vy * t;
+    const dx = point.x - closestX;
+    const dy = point.y - closestY;
+    const distSq = dx * dx + dy * dy;
+    if (distSq < bestDistSq) {
+      bestDistSq = distSq;
+      bestProgress = (accumulated + segmentLength * t) / metrics.totalLength;
+    }
+    accumulated += segmentLength;
+  }
+  if (bestProgress < 0) return 0;
+  if (bestProgress > 1) return bestProgress % 1;
+  return bestProgress;
+}
+
+function getProgressDistance(a: number, b: number): number {
+  const diff = Math.abs(a - b);
+  return Math.min(diff, 1 - diff);
+}
+
 type UnitAssets = {
   luminousVideo: HTMLVideoElement | null;
+  luminousImage: HTMLImageElement | null;
 };
 
 function drawUnitAt(
@@ -422,47 +563,63 @@ function drawUnitAt(
   assets?: UnitAssets,
 ) {
   // If luminous and a video asset is available, draw the video instead of a circle.
-  if (
-    unit.type === 'luminous' &&
-    assets?.luminousVideo &&
-    assets.luminousVideo.readyState >= 2 &&
-    assets.luminousVideo.videoWidth > 0 &&
-    assets.luminousVideo.videoHeight > 0
-  ) {
+  if (unit.type === 'luminous' && assets) {
+    const cellSize = radius / 0.28; // inverse of multiplier used when computing radius
+    const clipSize = cellSize * 0.82;
+    const clipX = centerX - clipSize / 2;
+    const clipY = centerY - clipSize / 2;
+
+    const drawMedia = (
+      source: HTMLVideoElement | HTMLImageElement,
+      width: number,
+      height: number,
+    ) => {
+      if (width <= 0 || height <= 0) return false;
+      const aspect = width / height;
+      let drawW = clipSize;
+      let drawH = clipSize;
+      if (aspect >= 1) {
+        drawH = clipSize / aspect;
+      } else {
+        drawW = clipSize * aspect;
+      }
+      const drawX = centerX - drawW / 2;
+      const drawY = centerY - drawH / 2;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(clipX, clipY, clipSize, clipSize);
+      ctx.clip();
+      try {
+        ctx.drawImage(source, drawX, drawY, drawW, drawH);
+        ctx.restore();
+        return true;
+      } catch {
+        ctx.restore();
+        return false;
+      }
+    };
+
     const video = assets.luminousVideo;
-    const aspect = video.videoWidth / video.videoHeight;
-    // Fit within the unit circle bounds, leaving slight padding
-    const maxSize = radius * 2 * 0.95;
-    let drawW = maxSize;
-    let drawH = maxSize;
-    if (aspect >= 1) {
-      drawH = maxSize / aspect;
-    } else {
-      drawW = maxSize * aspect;
+    if (
+      video &&
+      video.videoWidth > 0 &&
+      video.videoHeight > 0 &&
+      drawMedia(video, video.videoWidth, video.videoHeight)
+    ) {
+      return;
     }
 
-    // Outline to indicate rarity and unit boundary
-    ctx.beginPath();
-    ctx.strokeStyle = RARITY_OUTLINE[unit.rarity];
-    ctx.lineWidth = 3;
-    ctx.arc(centerX, centerY, radius + 3, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Draw a subtle background for contrast
-    ctx.beginPath();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Draw the video centered
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.drawImage(video, centerX - drawW / 2, centerY - drawH / 2, drawW, drawH);
-    ctx.restore();
-
-    return;
+    const image = assets.luminousImage;
+    if (
+      image &&
+      image.complete &&
+      image.naturalWidth > 0 &&
+      image.naturalHeight > 0 &&
+      drawMedia(image, image.naturalWidth, image.naturalHeight)
+    ) {
+      return;
+    }
   }
 
   // Default drawing: colored circle with label
@@ -603,32 +760,111 @@ export default function MiniGameCanvas() {
   }, [state.wave]);
 
   const attackTimersRef = useRef<AttackTimers>({});
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const selectedSlotRef = useRef<number | null>(null);
 
-  // Luminous video asset (attack motion). Place file at: frontend/public/gameimg/lumiattack.mp4
+  // Luminous video asset (attack motion). Place files at: frontend/public/assets/images/gameimg/lumiattak.webm (+ MP4/GIF fallback)
   const luminousVideoRef = useRef<HTMLVideoElement | null>(null);
-  const [luminousReady, setLuminousReady] = useState(false);
+  const luminousImageRef = useRef<HTMLImageElement | null>(null);
+  const [luminousVideoReady, setLuminousVideoReady] = useState(false);
+
+  const loadGifFallback = useCallback(() => {
+    if (luminousImageRef.current) return;
+    const img = new Image();
+    img.src = '/assets/images/gameimg/lumiattak.gif';
+    img.onload = () => {
+      luminousImageRef.current = img;
+      console.info('[MiniGame] Luminous GIF ready', {
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+      });
+    };
+    img.onerror = () => {
+      console.warn('[MiniGame] Luminous GIF load failed.');
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    if (!luminousVideoRef.current) {
-      const video = document.createElement('video');
-      // Note: file located under public/assets/images/gameimg/lumiattak.mp4
-      // If you rename/move it, update this path accordingly.
-      video.src = '/assets/images/gameimg/lumiattak.mp4';
-      video.muted = true; // allow autoplay on most browsers
-      video.loop = true;
-      video.playsInline = true;
-      video.preload = 'auto';
-      const onCanPlay = () => {
-        setLuminousReady(true);
-        // Try to play; ignore failures due to policies
-        video.play().catch(() => {});
-      };
-      video.addEventListener('canplay', onCanPlay, { once: true });
-      luminousVideoRef.current = video;
-    }
-    return () => undefined;
-  }, []);
+    if (luminousVideoRef.current) return undefined;
+
+    const video = document.createElement('video');
+    const candidates = [
+      '/assets/images/gameimg/lumiattakwebm.webm', // current WebM export
+      '/assets/images/gameimg/lumiattack.webm', // alternate WebM name (if renamed later)
+      '/assets/images/gameimg/lumiattak.webm', // legacy WebM name
+      '/assets/images/gameimg/lumiattakmp4.mp4', // MP4 fallback (no alpha)
+      '/assets/images/gameimg/lumiattack.mp4', // older MP4 name
+      '/gameimg/lumiattack.mp4', // legacy public root path
+    ];
+    let index = 0;
+    let readyLogged = false;
+    const tryNext = () => {
+      if (index >= candidates.length) {
+        console.warn('[MiniGame] All luminous video sources failed, switching to GIF fallback.');
+        loadGifFallback();
+        return;
+      }
+      const src = candidates[index++];
+      video.src = src;
+      try { video.load(); } catch {}
+      console.info('[MiniGame] Loading luminous video:', src);
+    };
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    const markReady = () => {
+      if (!readyLogged) {
+        console.info('[MiniGame] Luminous video ready', {
+          readyState: video.readyState,
+          width: video.videoWidth,
+          height: video.videoHeight,
+        });
+        readyLogged = true;
+      }
+      setLuminousVideoReady(true);
+    };
+    const tryPlay = () => {
+      video.play().catch(() => {});
+    };
+    video.addEventListener('loadedmetadata', () => {
+      try { video.currentTime = 0.01; } catch {}
+      markReady();
+    }, { once: true });
+    video.addEventListener('loadeddata', markReady, { once: true });
+    video.addEventListener('canplay', () => {
+      markReady();
+      tryPlay();
+    }, { once: true });
+    video.addEventListener('seeked', () => {
+      markReady();
+      tryPlay();
+    }, { once: true });
+    video.addEventListener('error', () => {
+      console.warn('[MiniGame] Luminous video load error, trying fallback.');
+      tryNext();
+    });
+    tryNext();
+    try { (window as any).__lumiVid = video; } catch {}
+    luminousVideoRef.current = video;
+
+    return undefined;
+  }, [loadGifFallback]);
+
+  // If autoplay is blocked, attempt playback on first user interaction
+  useEffect(() => {
+    const video = luminousVideoRef.current;
+    if (!video) return undefined;
+    const onUserInteract = () => {
+      video.play().catch(() => {});
+    };
+    window.addEventListener('pointerdown', onUserInteract, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', onUserInteract);
+    };
+  }, [luminousVideoReady]);
 
   useEffect(() => {
     const timers = attackTimersRef.current;
@@ -640,8 +876,15 @@ export default function MiniGameCanvas() {
     });
   }, [state.units]);
 
+  useEffect(() => {
+    if (selectedSlot === null) return;
+    const exists = state.units.some((unit) => unit.slot === selectedSlot);
+    if (!exists) {
+      setSelectedSlot(null);
+    }
+  }, [state.units, selectedSlot]);
+
   const dispatch = useGameDispatch();
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   useEffect(() => {
     if (!isStarted) {
@@ -652,6 +895,10 @@ export default function MiniGameCanvas() {
       leakCounterRef.current = 0;
     }
   }, [isStarted]);
+
+  useEffect(() => {
+    selectedSlotRef.current = selectedSlot;
+  }, [selectedSlot]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -666,9 +913,12 @@ export default function MiniGameCanvas() {
 
   useEffect(() => {
     const handleOutsidePointerDown = (event: PointerEvent) => {
-      if (!containerRef.current) return;
-      if (!containerRef.current.contains(event.target as Node)) {
+      const container = containerRef.current;
+      if (!container) return;
+      if (!container.contains(event.target as Node)) {
         setContextMenu(null);
+        setSelectedSlot(null);
+        selectedSlotRef.current = null;
       }
     };
     window.addEventListener('pointerdown', handleOutsidePointerDown);
@@ -699,7 +949,10 @@ export default function MiniGameCanvas() {
       const metrics = computePathMetrics(geometry.pathPoints);
 
       const dragging = draggingRef.current;
-      const assets = { luminousVideo: luminousReady ? luminousVideoRef.current : null };
+      const assets = {
+        luminousVideo: luminousVideoRef.current,
+        luminousImage: luminousImageRef.current,
+      };
       drawUnits(ctx, geometry, unitsRef.current, dragging, assets);
       drawMonsters(ctx, metrics, monstersRef.current, Math.max(9, geometry.trackWidth * 0.35));
 
@@ -707,8 +960,31 @@ export default function MiniGameCanvas() {
         const unitRadius = geometry.cellSize * 0.28;
         const centerX = dragging.pointerX - dragging.grabOffsetX;
         const centerY = dragging.pointerY - dragging.grabOffsetY;
-        const assets = { luminousVideo: luminousReady ? luminousVideoRef.current : null };
+        const assets = {
+          luminousVideo: luminousVideoRef.current,
+          luminousImage: luminousImageRef.current,
+        };
         drawUnitAt(ctx, dragging.unit, centerX, centerY, unitRadius, assets);
+      }
+
+      const activeSelectedSlot = selectedSlotRef.current;
+      if (activeSelectedSlot !== null) {
+        const selectedUnit = unitsRef.current.find((unit) => unit.slot === activeSelectedSlot);
+        if (selectedUnit) {
+          const center = getSlotCenter(geometry, activeSelectedSlot);
+          const rangeMultiplier = UNIT_ATTACK_RANGE_MULTIPLIER[selectedUnit.type] ?? 0;
+          const range = rangeMultiplier * geometry.cellSize;
+
+          ctx.save();
+          ctx.strokeStyle = 'rgba(110, 180, 255, 0.85)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([8, 6]);
+          ctx.beginPath();
+          ctx.arc(center.x, center.y, range, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
       }
     };
 
@@ -749,6 +1025,9 @@ export default function MiniGameCanvas() {
         return;
       }
 
+      const geometry = geometryRef.current;
+      const metrics = geometry ? computePathMetrics(geometry.pathPoints) : null;
+
       spawnTimerRef.current += delta;
       while (spawnTimerRef.current >= SPAWN_INTERVAL) {
         spawnMonster();
@@ -771,13 +1050,15 @@ export default function MiniGameCanvas() {
       let slainMonsters: Monster[] = [];
 
       if (monstersRef.current.length > 0) {
-        if (unitsRef.current.length > 0) {
+        if (unitsRef.current.length > 0 && geometry && metrics) {
           const defeatedIds = resolveUnitAttacks(
             delta,
             unitsRef.current,
             monstersRef.current,
             attackTimersRef.current,
             skillsRef.current,
+            geometry,
+            metrics,
           );
           const survivors: Monster[] = [];
           monstersRef.current.forEach((monster) => {
@@ -845,22 +1126,61 @@ export default function MiniGameCanvas() {
     if (!canvas) return () => undefined;
 
     const handlePointerDown = (event: PointerEvent) => {
-      if (event.button === 2) return;
       const geometry = geometryRef.current;
       if (!geometry) return;
-
-      setContextMenu(null);
-
-      if (event.button !== 0) return;
 
       const rect = canvas.getBoundingClientRect();
       const pointerX = event.clientX - rect.left;
       const pointerY = event.clientY - rect.top;
       const slot = pickSlot(geometry, pointerX, pointerY);
-      if (slot === undefined) return;
+
+      if (event.button === 2) {
+        event.preventDefault();
+        const unit = slot !== undefined ? unitsRef.current.find((item) => item.slot === slot) : undefined;
+        if (!unit) {
+          setSelectedSlot(null);
+          selectedSlotRef.current = null;
+          setContextMenu(null);
+          return;
+        }
+        setSelectedSlot(slot);
+        selectedSlotRef.current = slot;
+        const rangeMultiplier = UNIT_ATTACK_RANGE_MULTIPLIER[unit.type] ?? 0;
+        const range = rangeMultiplier * geometry.cellSize;
+        const stats = getUnitStats(unit, skillsRef.current);
+        const container = containerRef.current;
+        if (container) {
+          const containerRect = container.getBoundingClientRect();
+          const menuX = event.clientX - containerRect.left;
+          const menuY = event.clientY - containerRect.top;
+          setContextMenu({ unit, x: menuX, y: menuY, range, stats });
+        } else {
+          setContextMenu({ unit, x: pointerX, y: pointerY, range, stats });
+        }
+        return;
+      }
+
+      if (event.button !== 0) {
+        return;
+      }
+
+      setContextMenu(null);
+
+      if (slot === undefined) {
+        setSelectedSlot(null);
+        selectedSlotRef.current = null;
+        return;
+      }
 
       const unit = unitsRef.current.find((item) => item.slot === slot);
-      if (!unit) return;
+      if (!unit) {
+        setSelectedSlot(null);
+        selectedSlotRef.current = null;
+        return;
+      }
+
+      setSelectedSlot(slot);
+      selectedSlotRef.current = slot;
 
       const col = slot % 3;
       const row = Math.floor(slot / 3);
@@ -908,6 +1228,14 @@ export default function MiniGameCanvas() {
       const targetSlot = pickSlot(geometry, dragging.pointerX, dragging.pointerY);
       if (targetSlot !== undefined && targetSlot !== dragging.originSlot) {
         dispatch({ type: 'moveUnit', from: dragging.originSlot, to: targetSlot });
+        setSelectedSlot(targetSlot);
+        selectedSlotRef.current = targetSlot;
+      } else if (targetSlot !== undefined) {
+        setSelectedSlot(targetSlot);
+        selectedSlotRef.current = targetSlot;
+      } else {
+        setSelectedSlot(dragging.originSlot);
+        selectedSlotRef.current = dragging.originSlot;
       }
 
       draggingRef.current = null;
@@ -921,28 +1249,6 @@ export default function MiniGameCanvas() {
         } catch (error) {
           // ignore
         }
-        return;
-      }
-
-      if (event.button === 2) {
-        event.preventDefault();
-        const geometry = geometryRef.current;
-        if (!geometry) return;
-
-        const rect = canvas.getBoundingClientRect();
-        const pointerX = event.clientX - rect.left;
-        const pointerY = event.clientY - rect.top;
-        const slot = pickSlot(geometry, pointerX, pointerY);
-        if (slot === undefined) return;
-        const unit = unitsRef.current.find((item) => item.slot === slot);
-        if (!unit) return;
-
-        const container = containerRef.current;
-        if (!container) return;
-        const containerRect = container.getBoundingClientRect();
-        const menuX = event.clientX - containerRect.left;
-        const menuY = event.clientY - containerRect.top;
-        setContextMenu({ unit, x: menuX, y: menuY });
       }
     };
 
@@ -994,6 +1300,15 @@ export default function MiniGameCanvas() {
   };
 
   const startButtonLabel = state.health <= 0 ? '다시 시작' : '게임 시작';
+  const geometrySnapshot = geometryRef.current;
+  const contextMenuRangeCells =
+    contextMenu && geometrySnapshot?.cellSize && geometrySnapshot.cellSize > 0
+      ? contextMenu.range / geometrySnapshot.cellSize
+      : null;
+  const contextMenuAttacksPerSecond =
+    contextMenu && contextMenu.stats.cooldown > 0
+      ? contextMenu.stats.hitsPerAttack / contextMenu.stats.cooldown
+      : null;
 
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -1068,6 +1383,24 @@ export default function MiniGameCanvas() {
               희귀도: {contextMenu.unit.rarity}
             </span>
             <span style={{ fontSize: '13px', color: '#b4bac6' }}>레벨: {contextMenu.unit.level}</span>
+            <span style={{ fontSize: '13px', color: '#b4bac6' }}>
+              사거리: 근접 (
+              {contextMenuRangeCells !== null
+                ? `약 ${contextMenuRangeCells.toFixed(2)}칸`
+                : `약 ${Math.round(contextMenu.range)}px`}
+              )
+            </span>
+            <span style={{ fontSize: '13px', color: '#b4bac6' }}>
+              공격력: {Math.round(contextMenu.stats.damage)}
+            </span>
+            <span style={{ fontSize: '13px', color: '#b4bac6' }}>
+              공격속도: {contextMenu.stats.cooldown.toFixed(2)}초
+            </span>
+            {contextMenu.stats.hitsPerAttack > 1 && (
+              <span style={{ fontSize: '13px', color: '#b4bac6' }}>
+                동시 타격: {contextMenu.stats.hitsPerAttack}마리
+              </span>
+            )}
           </div>
           <button
             type="button"

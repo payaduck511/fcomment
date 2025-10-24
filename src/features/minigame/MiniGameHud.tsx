@@ -33,8 +33,8 @@ const MAX_UNITS = 9;
 const SKILL_BASE_COST = 3;
 const SKILL_COST_STEP = 3;
 const SKILL_REROLL_COST = 1;
-const MAX_UNIT_LEVEL = 5;
-const MAX_BISHOP_LEVEL = 3;
+const MAX_LUMINOUS_LEVEL = 4;
+const LUMINOUS_TARGETS_BY_LEVEL = [2, 3, 4, 5];
 
 function randId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -60,83 +60,46 @@ function findFreeSlot(isOccupied: (slot: number) => boolean) {
   return undefined;
 }
 
-function getUnitLevel(skills: SkillCard[], unitType: keyof typeof UNIT_NAMES) {
+function getUnitLevelBonus(skills: SkillCard[], unitType: keyof typeof UNIT_NAMES) {
   return skills
     .filter((skill) => skill.kind === 'unit-level' && skill.unitType === unitType)
     .reduce((total, skill) => total + skill.amount, 0);
 }
 
-function createUnitAttackCard(skills: SkillCard[]): SkillCard {
-  const unitType = rollUnitType();
-  const amount = Math.round((0.1 + Math.random() * 0.07) * 100) / 100; // 10% ~ 17%
-  return {
-    id: randId('skill'),
-    kind: 'unit-attack-up',
-    unitType,
-    amount,
-  };
-}
-
-function createUnitLevelCard(skills: SkillCard[]): SkillCard | undefined {
-  const types = Object.keys(UNIT_NAMES) as Array<keyof typeof UNIT_NAMES>;
-  const available = types.filter((unitType) => {
-    const currentLevel = getUnitLevel(skills, unitType);
-    const cap = unitType === 'bishop' ? MAX_BISHOP_LEVEL : MAX_UNIT_LEVEL;
-    return currentLevel < cap;
-  });
-  if (available.length === 0) return undefined;
-  const unitType = available[Math.floor(Math.random() * available.length)];
+function createLuminousLevelCard(skills: SkillCard[]): SkillCard | undefined {
+  const currentLevel = 1 + getUnitLevelBonus(skills, 'luminous');
+  if (currentLevel >= MAX_LUMINOUS_LEVEL) {
+    return undefined;
+  }
   return {
     id: randId('skill'),
     kind: 'unit-level',
-    unitType,
+    unitType: 'luminous',
     amount: 1,
   };
 }
 
-function createGlobalAttackCard(): SkillCard {
-  const amount = Math.round((0.06 + Math.random() * 0.06) * 100) / 100; // 6% ~ 12%
-  return {
-    id: randId('skill'),
-    kind: 'global-attack-up',
-    amount,
-  };
-}
-
 function generateSkillOptions(skills: SkillCard[]): SkillCard[] {
-  const options: SkillCard[] = [];
-  const generators: Array<() => SkillCard | undefined> = [
-    () => createUnitAttackCard(skills),
-    () => createUnitLevelCard(skills),
-    () => createGlobalAttackCard(),
-  ];
-
-  while (options.length < 3) {
-    const generator = generators[Math.floor(Math.random() * generators.length)];
-    const card = generator();
-    if (!card) {
-      // fallback to global attack if generator returns undefined (e.g., level cap reached)
-      options.push(createGlobalAttackCard());
-      continue;
-    }
-    options.push(card);
-  }
-
-  return options;
+  const card = createLuminousLevelCard(skills);
+  return card ? [card] : [];
 }
 
-function describeSkill(card: SkillCard) {
+function describeSkill(card: SkillCard, ownedSkills: SkillCard[], includeCard = false) {
   switch (card.kind) {
-    case 'unit-attack-up':
-      return `${UNIT_NAMES[card.unitType]} 공격력 +${Math.round(card.amount * 100)}%`;
     case 'unit-level':
-      if (card.unitType === 'bishop') {
-        const nextLevel = card.amount;
-        return `${UNIT_NAMES.bishop} 프레이 범위 +${nextLevel}칸`;
+      if (card.unitType === 'luminous') {
+        const currentLevel = 1 + getUnitLevelBonus(ownedSkills, card.unitType);
+        const previewLevel = Math.min(
+          MAX_LUMINOUS_LEVEL,
+          includeCard ? currentLevel + card.amount : currentLevel,
+        );
+        const targetCount =
+          LUMINOUS_TARGETS_BY_LEVEL[Math.max(0, Math.min(previewLevel, LUMINOUS_TARGETS_BY_LEVEL.length) - 1)];
+        if (includeCard) {
+          return `${UNIT_NAMES.luminous} 레벨 ${currentLevel} → ${previewLevel} (동시 타격 ${targetCount}마리)`;
+        }
+        return `${UNIT_NAMES.luminous} 레벨 ${currentLevel} (동시 타격 ${targetCount}마리)`;
       }
-      return `${UNIT_NAMES[card.unitType]} 스킬 레벨 +${card.amount}`;
-    case 'global-attack-up':
-      return `전 캐릭터 공격력 +${Math.round(card.amount * 100)}%`;
     default:
       return '알 수 없는 스킬';
   }
@@ -164,12 +127,17 @@ export default function MiniGameHud() {
 
   const skillSlotsRemaining = MAX_SKILL_CARDS - state.skills.length;
   const currentSkillCost = SKILL_BASE_COST + state.skills.length * SKILL_COST_STEP;
+  const luminousLevel = 1 + getUnitLevelBonus(state.skills, 'luminous');
+  const hasSkillAvailable = luminousLevel < MAX_LUMINOUS_LEVEL && skillSlotsRemaining > 0;
 
   const canDrawSkill =
     !state.skillDraft &&
-    state.skills.length < MAX_SKILL_CARDS &&
+    hasSkillAvailable &&
     state.meso >= currentSkillCost;
-  const canReroll = state.skillDraft !== undefined && state.meso >= SKILL_REROLL_COST;
+  const canReroll =
+    state.skillDraft !== undefined &&
+    hasSkillAvailable &&
+    state.meso >= SKILL_REROLL_COST;
 
   const handleDrawUnit = () => {
     if (!canDrawUnit) return;
@@ -200,21 +168,23 @@ export default function MiniGameHud() {
     dispatch({ type: 'incrementDrawUpgrade' });
   };
 
-  const handleSkillDraw = () => {
-    if (!canDrawSkill) return;
-    const options = generateSkillOptions(state.skills);
-    dispatch({ type: 'spendMeso', amount: currentSkillCost });
-    dispatch({ type: 'startSkillDraft', draft: { options, rerollsUsed: 0 } });
-  };
+const handleSkillDraw = () => {
+  if (!canDrawSkill) return;
+  const options = generateSkillOptions(state.skills);
+  if (options.length === 0) return;
+  dispatch({ type: 'spendMeso', amount: currentSkillCost });
+  dispatch({ type: 'startSkillDraft', draft: { options, rerollsUsed: 0 } });
+};
 
-  const handleSkillReroll = () => {
-    if (!canReroll || !state.skillDraft) return;
-    const options = generateSkillOptions(state.skills);
-    dispatch({ type: 'spendMeso', amount: SKILL_REROLL_COST });
-    dispatch({
-      type: 'updateSkillDraft',
-      draft: { options, rerollsUsed: state.skillDraft.rerollsUsed + 1 },
-    });
+const handleSkillReroll = () => {
+  if (!canReroll || !state.skillDraft) return;
+  const options = generateSkillOptions(state.skills);
+  if (options.length === 0) return;
+  dispatch({ type: 'spendMeso', amount: SKILL_REROLL_COST });
+  dispatch({
+    type: 'updateSkillDraft',
+    draft: { options, rerollsUsed: state.skillDraft.rerollsUsed + 1 },
+  });
   };
 
   const handleSkillSelect = (card: SkillCard) => {
@@ -409,7 +379,7 @@ export default function MiniGameHud() {
                     color: '#d6dae2',
                   }}
                 >
-                  {describeSkill(skill)}
+                  {describeSkill(skill, state.skills)}
                 </li>
               ))}
             </ul>
@@ -494,13 +464,9 @@ export default function MiniGameHud() {
                   }}
                 >
                   <span style={{ fontSize: '11px', color: '#aab3c5', letterSpacing: '0.05em' }}>
-                    {card.kind === 'unit-attack-up'
-                      ? '유닛 공격력'
-                      : card.kind === 'unit-level'
-                        ? '유닛 레벨'
-                        : '전체 공격력'}
+                    루미너스 레벨업
                   </span>
-                  <span>{describeSkill(card)}</span>
+                  <span>{describeSkill(card, state.skills, true)}</span>
                 </button>
               ))}
             </div>
